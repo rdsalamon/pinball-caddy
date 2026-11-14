@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Pinball AI Caddy</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --border:#334155; --text:#f8fafc; --muted:#94a3b8; --accent:#38bdf8; --gold:#fbbf24; --ok:#34d399; --bad:#f87171; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); padding:16px 16px 85px; }
+  header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:14px; }
+  h1 { margin:0; font-size:20px; color:var(--gold); }
+  .btn { background:#0284c7; color:#fff; border:none; padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer; }
+  .btn-gold { background:#d97706; } .btn-sec { background:var(--card); border:1px solid var(--border); }
+  .btn-ok { background:#065f46; color:var(--ok); border:1px solid var(--ok); } .btn-bad { background:#7f1d1d; color:var(--bad); border:1px solid var(--bad); }
+  .inp, textarea { width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); background:#0b1120; color:var(--text); font-size:15px; margin-bottom:10px; }
+  textarea { min-height:70px; font-family:inherit; }
+  .box, .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:10px; }
+  .card { display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+  .row { display:flex; gap:8px; margin-top:10px; } .row .btn { flex:1; }
+  .fl { font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; margin-bottom:4px; }
+  .fg { margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+  .bar { position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:1px solid var(--border); padding:10px 16px; display:flex; gap:8px; }
+  .bar .btn { flex:1; } .hidden { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>PINBALL AI CADDY</h1><div id="sub" style="font-size:12px;color:var(--muted);">v5 Quick-Look & Google Search</div></div>
+  <div style="display:flex;gap:6px;">
+  <button class="btn btn-gold" onclick="show('vImp')">+ From PDF</button>
+  <button class="btn btn-sec" onclick="openForm()">+ Manual</button>
+</div>
+</header>
+
+<div id="vImp" class="hidden">
+  <div class="box">
+    <h3 style="margin-top:0;color:var(--gold);">Step 1: Copy Prompt for Any AI Chat</h3>
+    <p style="font-size:13px;color:var(--muted);">Tap Copy, open any new AI chat, upload your pinball PDF, and paste this prompt:</p>
+    <textarea id="pdfPromptBox" style="min-height:85px;font-size:12px;" readonly>Read the attached pinball rulesheet PDF and summarize it using these exact 8 labels on separate lines:
+NAME: [Official Machine Name + Manufacturer]
+CODE: [Latest code version + 1-line visual clue]
+SKILL: [Skill Shot + physical location in parentheses]
+MODES: [Theme name for modes + exact shots and physical locations to start them]
+MULTI: [Primary multiball + shots and physical locations to start]
+MULT: [Playfield multipliers + shots and physical locations]
+STRAT: [Best tournament point strategy & stacking]
+WATCH: [Drain hazards, ball-save quirks, or custom notes]</textarea>
+    <div class="row" style="margin-bottom:14px;">
+  <button class="btn btn-ok" onclick="copyPdfPrompt()">1. Copy Prompt</button>
+  <a href="https://gemini.google.com/app" target="_blank" class="btn" style="text-align:center;text-decoration:none;">2. Open Gemini ↗</a>
+</div>
+
+    <h3 style="margin-top:0;color:var(--gold);">Step 2: Paste AI's JSON Reply Here</h3>
+    <textarea id="jsonPasteBox" style="min-height:95px;font-family:monospace;font-size:12px;" placeholder='Paste the NAME: / CODE: / SKILL: reply here...'></textarea>
+    <div class="row">
+      <button class="btn btn-sec" onclick="show('vList')">Cancel</button>
+      <button class="btn" onclick="importJsonCard()">Auto-Create Card</button>
+    </div>
+  </div>
+</div>
+
+<div id="vList">
+  <div class="box" style="border-color:var(--accent);">
+    <div class="fl">Walk-Up AI Generator (Uses Live Google Search)</div>
+    <div class="row" style="margin-top:4px;">
+      <input type="text" id="aiIn" class="inp" style="margin:0;" placeholder="Enter any machine (e.g. Harry Potter JJP)...">
+      <button class="btn btn-gold" id="genBtn" style="flex:0 0 auto;" onclick="genGame()">Generate</button>
+    </div>
+  </div>
+  <input type="text" id="qIn" class="inp" placeholder="Filter saved library..." oninput="renderList()">
+  <div id="list"></div>
+</div>
+
+<div id="vDet" class="hidden">
+  <div class="box" id="detBox"></div>
+  <div class="row">
+    <button class="btn btn-sec" onclick="show('vList')">← Back</button>
+    <button class="btn" id="editBtn">Edit / Patch</button>
+    <button class="btn btn-bad" id="delBtn">Delete</button>
+  </div>
+</div>
+
+<div id="vForm" class="hidden">
+  <div class="box">
+    <h3 id="fTitle" style="margin-top:0;color:var(--gold);">Machine Details</h3>
+    <input type="text" id="f_name" class="inp" placeholder="Machine Name">
+    <input type="text" id="f_code" class="inp" placeholder="1. Latest Known Code & Clue">
+    <textarea id="f_skill" placeholder="2. Skill Shot (+ Physical Location)"></textarea>
+    <textarea id="f_modes" placeholder="3. How to Start Modes (Theme Name + Physical Location)"></textarea>
+    <textarea id="f_multi" placeholder="4. Primary Multiball (+ Physical Location)"></textarea>
+    <textarea id="f_mult" placeholder="5. Playfield Multipliers (+ Physical Location)"></textarea>
+    <textarea id="f_strat" placeholder="6. Best Point Strategy"></textarea>
+    <textarea id="f_watch" placeholder="7. Watch Out / Custom Note"></textarea>
+    <div class="row"><button class="btn btn-sec" onclick="show('vList')">Cancel</button><button class="btn" onclick="saveForm()">Save</button></div>
+  </div>
+</div>
+
+<div id="vKey" class="hidden">
+  <div class="box">
+    <h3 style="margin-top:0;color:var(--gold);">Gemini API Key</h3>
+    <input type="password" id="kIn" class="inp" placeholder="Paste key from ://google.com">
+    <div class="row"><button class="btn btn-sec" onclick="show('vList')">← Back</button><button class="btn" onclick="saveKey()">Save Key</button></div>
+  </div>
+</div>
+
+<div id="vExp" class="hidden">
+  <div class="box">
+    <h3 style="margin-top:0;color:var(--gold);">PC AI Training Export (.JSONL)</h3>
+    <div class="row" style="margin-bottom:10px;"><button class="btn btn-ok" onclick="copyExp()">Copy</button><button class="btn" onclick="dlExp()">Download .jsonl</button></div>
+    <textarea id="expBox" style="min-height:160px;font-family:monospace;font-size:12px;" readonly></textarea>
+    <div class="row"><button class="btn btn-sec" onclick="show('vList')">← Back</button></div>
+  </div>
+</div>
+
+<div class="bar">
+  <button class="btn btn-sec" onclick="show('vList')">Library</button>
+  <button class="btn btn-sec" onclick="openKey()">API Key</button>
+  <button class="btn btn-ok" onclick="openExp()">Export AI</button>
+</div>
+
+<script>
+const DB = "pinball_ai_v5", KEY_DB = "pinball_gemini_key";
+const STARTERS = [
+  {
+    name: "Fallout (Stern)",
+    code: "Stern v0.91+ (Clue: Check Pip-Boy LCD for Side Quests)",
+    skill: "Plunge to Right Inlane (lower-right) when bottle cap flashes to drop Nuka-Cola Spinner (upper-center), or short-plunge to steal Power Armor.",
+    modes: "Quests: Hit yellow food shots to reach 50+ HP, then shoot Sundries Optical Scoop (mid-right — easy backhand from right flipper) to start a Quest.",
+    multi: "Bash Deathclaw Toy (right-center) until it fights back for Deathclaw Multiball.",
+    mult: "Short-plunge at start of ball to steal Power Armor for temporary multiplier, or buy perks at Sundries Scoop (mid-right).",
+    strat: "Build HP with yellow shots first, start multiball Quests (Wedding Day or Kings) at Sundries Scoop (mid-right), and stack Song Modes with Deathclaw Multiball.",
+    watch: "Left side has a single pop bumper instead of left slingshot; watch for fast ejects from Sundries Scoop (mid-right)."
+  },
+  {
+    name: "Harry Potter (Jersey Jack)",
+    code: "JJP v1.26 (Clue: Check 27-inch backglass UI for all 8 movie chapters)",
+    skill: "Plunge softly into Top Lanes / Upper Playfield Entrance (upper-right) or hit Right Spinner (lower-right) for early spell progress.",
+    modes: "School Years & Movie Scenes: Shoot Scoop (mid-right, tucked under upper-right flipper) to select and start a Year at Hogwarts.",
+    multi: "Shoot Center Ramp (center) and Right Ramp (center-right) to lower 8 House Banners, then shoot Grand Staircase (upper-center) for Explore Hogwarts Multiball.",
+    mult: "Build Bonus X via top lanes and upper-left Quidditch loops; use Potion/Spell upgrades and Protego (right outlane shield) to extend multiball runs.",
+    strat: "Lower House Banners first so you can bring Explore Hogwarts Multiball into a Year Mode started at Scoop (mid-right), then collect Horcruxes at Upper-Left U-Turn Ramp.",
+    watch: "Death Eater Drop Target (center-left) kicks rebounds back at lightning speed — always be ready to slap-save or nudge."
+  }
+];
+let games = [], editIdx = null;
+const show = id => ["vList","vDet","vForm","vKey","vExp","vImp"].forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
+const esc = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const saveDB = () => localStorage.setItem(DB, JSON.stringify(games));
+function init() { const s = localStorage.getItem(DB); games = s ? JSON.parse(s) : JSON.parse(JSON.stringify(STARTERS)); saveDB(); renderList(); }
+
+function renderList() {
+  const q = document.getElementById("qIn").value.toLowerCase(), list = document.getElementById("list");
+  list.innerHTML = ""; document.getElementById("sub").textContent = `${games.length} Machines in Library`;
+  games.map((g, i) => ({...g, i})).filter(g => g.name.toLowerCase().includes(q)).sort((a,b) => a.name.localeCompare(b.name)).forEach(g => {
+    const d = document.createElement("div"); d.className = "card"; d.onclick = () => showDet(g.i);
+    d.innerHTML = `<div><b>${esc(g.name)}</b><div style="font-size:12px;color:var(--muted);">${esc(g.code.split("(")[0].trim())}</div></div><b style="color:var(--accent);">›</b>`;
+    list.appendChild(d);
+  });
+}
+
+function showDet(i) {
+  show("vDet"); const g = games[i];
+  document.getElementById("detBox").innerHTML = `<h2 style="margin:0 0 12px;color:var(--gold);">${esc(g.name)}</h2>` +
+    [["Code & Clue","code"],["Skill Shot","skill"],["How to Start Modes","modes"],["Primary Multiball","multi"],["Playfield Multipliers","mult"],["Best Point Strategy","strat"],["Watch Out / Note","watch"]]
+    .map(([lbl, k]) => `<div class="fg"><div class="fl">${lbl}</div><div>${esc(g[k])}</div></div>`).join("");
+  document.getElementById("editBtn").onclick = () => openForm(i);
+  document.getElementById("delBtn").onclick = () => { if(confirm("Delete?")){ games.splice(i,1); saveDB(); show("vList"); renderList(); }};
+}
+
+function openForm(i = null) {
+  show("vForm"); editIdx = i;
+  ["name","code","skill","modes","multi","mult","strat","watch"].forEach(k => document.getElementById("f_"+k).value = i !== null ? games[i][k] : "");
+}
+
+function saveForm() {
+  const name = document.getElementById("f_name").value.trim(); if (!name) return alert("Enter Machine Name");
+  const obj = {}; ["name","code","skill","modes","multi","mult","strat","watch"].forEach(k => obj[k] = document.getElementById("f_"+k).value.trim() || "N/A");
+  if (editIdx !== null) { games[editIdx] = obj; saveDB(); showDet(editIdx); } else { games.push(obj); saveDB(); showDet(games.length - 1); }
+}
+
+const openKey = () => { show("vKey"); document.getElementById("kIn").value = localStorage.getItem(KEY_DB) || ""; };
+const saveKey = () => { localStorage.setItem(KEY_DB, document.getElementById("kIn").value.trim()); alert("API Key Saved!"); show("vList"); };
+
+function openExp() {
+  show("vExp");
+  document.getElementById("expBox").value = games.map(g => JSON.stringify({
+    messages: [
+      { role: "system", content: "You are a tournament pinball caddy. Give concise v5 Quick-Look rules with physical shot locations." },
+      { role: "user", content: "Quick-Look for " + g.name },
+      { role: "assistant", content: Object.entries(g).map(([k,v]) => k + ": " + v).join("\n") }
+    ]
+  })).join("\n");
+}
+function copyExp() { document.getElementById("expBox").select(); navigator.clipboard.writeText(document.getElementById("expBox").value); alert("Copied!"); }
+function dlExp() { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([document.getElementById("expBox").value])); a.download = "pinball.jsonl"; a.click(); }
+
+async function genGame() {
+  const m = document.getElementById("aiIn").value.trim(), k = localStorage.getItem(KEY_DB);
+  if (!m) return alert("Type a pinball machine name first!");
+  if (!k) { alert("Please paste your free Gemini API key under 'API Key' first."); return openKey(); }
+  const btn = document.getElementById("genBtn"); btn.disabled = true; btn.textContent = "Searching...";
+  const prompt = `Return ONLY raw JSON (no markdown backticks) with keys: name, code, skill, modes, multi, mult, strat, watch for pinball machine "${m}". Use v5 Quick-Look format: include latest code version + visual clue in "code", theme-specific mode name in "modes", and pair every themed shot with its physical playfield location in parentheses like (mid-right) or (upper-left).`;}
+
+function copyPdfPrompt() {
+  const b = document.getElementById("pdfPromptBox");
+  b.select();
+  navigator.clipboard.writeText(b.value);
+  alert("Prompt copied! Open any AI chat, attach your PDF, and paste it.");
+}
+
+function importJsonCard() {
+  const raw = document.getElementById("jsonPasteBox").value.trim();
+  if (!raw) return alert("Paste the AI summary first!");
+  const getLine = (tag) => {
+    const m = raw.match(new RegExp("(?:^|\\n)[\\s\\*\\-•]*" + tag + "[\\s\\*]*:[\\s\\*]*(.+)", "i"));
+    return m ? m.pop().replace(/^\*+|\*+$/g, "").trim() : "";
+  };
+  const name = getLine("NAME");
+  if (!name) return alert("Could not find 'NAME:' in the pasted text. Check that your paste includes NAME: at the top.");
+  games.push({
+    name: name,
+    code: getLine("CODE") || "Latest Code",
+    skill: getLine("SKILL") || "N/A",
+    modes: getLine("MODES") || "N/A",
+    multi: getLine("MULTI") || "N/A",
+    mult: getLine("MULT") || "N/A",
+    strat: getLine("STRAT") || "N/A",
+    watch: getLine("WATCH") || "N/A"
+  });
+  saveDB();
+  document.getElementById("jsonPasteBox").value = "";
+  showDet(games.length - 1);
+}
+
+init();
+</script></body></html>
