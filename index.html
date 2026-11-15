@@ -52,7 +52,7 @@
   <div class="box">
     <h3 style="margin-top:0;color:var(--gold);">About Pinball Caddy</h3>
     <p style="font-size:14px;line-height:1.5;">Notes were sourced from <a href="https://pinballrulesheets.com" target="_blank" style="color:var(--accent);">pinballrulesheets.com</a>. You can create your own notes as well and toggle as necessary. Notes from pinballrulesheets were extracted using AI and may not be accurate.</p>
-    <p style="font-size:13px;color:var(--muted);line-height:1.4;">Tip: Tap any machine to view its Quick-Look guide, tap <b>Edit / Add Notes</b> to customize any field or add personal tournament notes, and use the toggle pill on edited fields to switch between your notes and the original rulesheet.</p>
+    <p style="font-size:13px;color:var(--muted);line-height:1.4;">Tip: Tap any machine to view its Quick-Look guide, tap <b>Edit / Notes</b> to customize any field or add personal tournament notes, and use the toggle pill on edited fields to switch between your notes and the original rulesheet.</p>
     <button class="btn btn-sec" style="width:100%;" onclick="show('vList')">← Back to Library</button>
   </div>
 </div>
@@ -138,7 +138,7 @@ MISC: [Extra tournament tips, wizard modes, or custom notes]</textarea>
 </div>
 
 <script>
-const APP_VER = "v1.3";
+const APP_VER = "v1.4";
 const DB = "pinball_caddy_master";
 document.getElementById("verBadge").textContent = APP_VER;
 const STARTERS = [
@@ -1337,6 +1337,18 @@ function restoreBackup() {
 }
 function copyExp() { document.getElementById("expBox").select(); navigator.clipboard.writeText(document.getElementById("expBox").value); alert("Copied .JSONL!"); }
 function dlExp() { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([document.getElementById("expBox").value])); a.download = "pinball.jsonl"; a.click(); }
+
+function autoUpdate() {
+  if (navigator.onLine && location.protocol !== "file:") {
+    fetch(location.pathname + "?t=" + Date.now(), { cache: "no-store" }).then(r => r.text()).then(html => {
+      const m = html.match(/const APP_VER = "([^"]+)"/);
+      if (m && m.pop() !== APP_VER) location.href = location.pathname + "?v=" + Date.now();
+    }).catch(() => {});
+  }
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") autoUpdate(); });
+autoUpdate();
+
 init();
 </script></body></html>
 
