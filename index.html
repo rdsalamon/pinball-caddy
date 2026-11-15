@@ -4,80 +4,65 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Pinball AI Caddy</title>
+<title>Pinball Caddy</title>
 <style>
   :root { --bg:#0f172a; --card:#1e293b; --border:#334155; --text:#f8fafc; --muted:#94a3b8; --accent:#38bdf8; --gold:#fbbf24; --ok:#34d399; --bad:#f87171; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); padding:16px 16px 85px; }
-  header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:14px; }
-  h1 { margin:0; font-size:20px; color:var(--gold); }
-  .btn { background:#0284c7; color:#fff; border:none; padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer; }
-  .btn-gold { background:#d97706; } .btn-sec { background:var(--card); border:1px solid var(--border); }
+  body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); padding:14px 14px 85px; }
+  header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:12px; }
+  h1 { margin:0; font-size:19px; color:var(--gold); }
+  .btn { background:#0284c7; color:#fff; border:none; padding:9px 12px; border-radius:10px; font-weight:600; cursor:pointer; font-size:13px; }
+  .btn-gold { background:#d97706; } .btn-sec { background:var(--card); border:1px solid var(--border); color:var(--text); }
   .btn-ok { background:#065f46; color:var(--ok); border:1px solid var(--ok); } .btn-bad { background:#7f1d1d; color:var(--bad); border:1px solid var(--bad); }
   .inp, textarea { width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); background:#0b1120; color:var(--text); font-size:15px; margin-bottom:10px; }
-  textarea { min-height:70px; font-family:inherit; }
-  .box, .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:10px; }
+  textarea { min-height:68px; font-family:inherit; }
+  .box, .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:8px; }
   .card { display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
-  .row { display:flex; gap:8px; margin-top:10px; } .row .btn { flex:1; }
+  .row { display:flex; gap:8px; margin-top:8px; } .row .btn { flex:1; }
   .fl { font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; margin-bottom:4px; }
   .fg { margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border); }
-  .bar { position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:1px solid var(--border); padding:10px 16px; display:flex; gap:8px; }
+  .pills { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
+  .pill { background:var(--card); border:1px solid var(--border); color:var(--accent); padding:5px 9px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; }
+  .pill.active { background:var(--accent); color:#0f172a; }
+  .grp-hdr { font-size:13px; font-weight:800; color:var(--gold); text-transform:uppercase; margin:14px 0 6px; letter-spacing:0.5px; }
+  .bar { position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:1px solid var(--border); padding:10px 14px; display:flex; gap:8px; }
   .bar .btn { flex:1; } .hidden { display:none; }
 </style>
 </head>
 <body>
 <header>
-  <div><h1>PINBALL AI CADDY</h1><div id="sub" style="font-size:12px;color:var(--muted);">v5 Quick-Look & Google Search</div></div>
-  <div style="display:flex;gap:6px;">
-  <button class="btn btn-gold" onclick="show('vImp')">+ From PDF</button>
-  <button class="btn btn-sec" onclick="openForm()">+ Manual</button>
-</div>
+  <div><h1>PINBALL CADDY <span id="verBadge" style="font-size:12px;font-weight:500;color:var(--muted);"></span></h1><div id="sub" style="font-size:12px;color:var(--muted);">Loading Library...</div></div>
+  <button class="btn btn-gold" onclick="show('vAddMenu')">+ Add Machine</button>
 </header>
 
-<div id="vImp" class="hidden">
-  <div class="box">
-    <h3 style="margin-top:0;color:var(--gold);">Step 1: Copy Prompt for Any AI Chat</h3>
-    <p style="font-size:13px;color:var(--muted);">Tap Copy, open any new AI chat, upload your pinball PDF, and paste this prompt:</p>
-    <textarea id="pdfPromptBox" style="min-height:85px;font-size:12px;" readonly>Read the attached pinball rulesheet PDF and summarize it using these exact 8 labels on separate lines:
-NAME: [Official Machine Name + Manufacturer]
-CODE: [Latest code version + 1-line visual clue]
-SKILL: [Skill Shot + physical location in parentheses]
-MODES: [Theme name for modes + exact shots and physical locations to start them]
-MULTI: [Primary multiball + shots and physical locations to start]
-MULT: [Playfield multipliers + shots and physical locations]
-STRAT: [Best tournament point strategy & stacking]
-WATCH: [Drain hazards, ball-save quirks, or custom notes]</textarea>
-    <div class="row" style="margin-bottom:14px;">
-  <button class="btn btn-ok" onclick="copyPdfPrompt()">1. Copy Prompt</button>
-  <a href="https://gemini.google.com/app" target="_blank" class="btn" style="text-align:center;text-decoration:none;">2. Open Gemini ↗</a>
-</div>
-
-    <h3 style="margin-top:0;color:var(--gold);">Step 2: Paste AI's JSON Reply Here</h3>
-    <textarea id="jsonPasteBox" style="min-height:95px;font-family:monospace;font-size:12px;" placeholder='Paste the NAME: / CODE: / SKILL: reply here...'></textarea>
-    <div class="row">
-      <button class="btn btn-sec" onclick="show('vList')">Cancel</button>
-      <button class="btn" onclick="importJsonCard()">Auto-Create Card</button>
-    </div>
-  </div>
-</div>
-
 <div id="vList">
-  <div class="box" style="border-color:var(--accent);">
-    <div class="fl">Walk-Up AI Generator (Uses Live Google Search)</div>
-    <div class="row" style="margin-top:4px;">
-      <input type="text" id="aiIn" class="inp" style="margin:0;" placeholder="Enter any machine (e.g. Harry Potter JJP)...">
-      <button class="btn btn-gold" id="genBtn" style="flex:0 0 auto;" onclick="genGame()">Generate</button>
-    </div>
+  <div class="row" style="margin:0 0 10px;">
+    <button class="btn" id="tabAZ" onclick="setMode('az')">A–Z Alphabetical</button>
+    <button class="btn btn-sec" id="tabMfg" onclick="setMode('mfg')">By Manufacturer</button>
   </div>
-  <input type="text" id="qIn" class="inp" placeholder="Filter saved library..." oninput="renderList()">
+  <div style="display:flex;gap:6px;margin-bottom:10px;">
+    <input type="text" id="qIn" class="inp" style="margin:0;flex:1;" placeholder="Search any machine..." oninput="renderList()">
+    <button class="btn btn-sec" onclick="document.getElementById('qIn').value='';renderList();" title="Clear search">✕</button>
+  </div>
+  <div id="azBar" class="pills"></div>
   <div id="list"></div>
+</div>
+
+<div id="vAddMenu" class="hidden">
+  <div class="box">
+    <h3 style="margin-top:0;color:var(--gold);">Add a New Machine</h3>
+    <p style="font-size:13px;color:var(--muted);">Choose how you want to add a rulesheet to your Caddy:</p>
+    <button class="btn btn-gold" style="width:100%;margin-bottom:10px;padding:14px;" onclick="show('vImp')">From a Rulesheet PDF (Uses Gemini)</button>
+    <button class="btn" style="width:100%;margin-bottom:10px;padding:14px;" onclick="openForm()">Manual Entry (Type / Paste Fields)</button>
+    <button class="btn btn-sec" style="width:100%;" onclick="show('vList')">← Back to Library</button>
+  </div>
 </div>
 
 <div id="vDet" class="hidden">
   <div class="box" id="detBox"></div>
   <div class="row">
     <button class="btn btn-sec" onclick="show('vList')">← Back</button>
-    <button class="btn" id="editBtn">Edit / Patch</button>
+    <button class="btn" id="editBtn">Edit / Notes</button>
     <button class="btn btn-bad" id="delBtn">Delete</button>
   </div>
 </div>
@@ -85,23 +70,39 @@ WATCH: [Drain hazards, ball-save quirks, or custom notes]</textarea>
 <div id="vForm" class="hidden">
   <div class="box">
     <h3 id="fTitle" style="margin-top:0;color:var(--gold);">Machine Details</h3>
-    <input type="text" id="f_name" class="inp" placeholder="Machine Name">
+    <input type="text" id="f_name" class="inp" placeholder="Machine Name (e.g. Jaws (Stern))">
     <input type="text" id="f_code" class="inp" placeholder="1. Latest Known Code & Clue">
     <textarea id="f_skill" placeholder="2. Skill Shot (+ Physical Location)"></textarea>
-    <textarea id="f_modes" placeholder="3. How to Start Modes (Theme Name + Physical Location)"></textarea>
+    <textarea id="f_modes" placeholder="3. How to Start Modes (+ Physical Location)"></textarea>
     <textarea id="f_multi" placeholder="4. Primary Multiball (+ Physical Location)"></textarea>
     <textarea id="f_mult" placeholder="5. Playfield Multipliers (+ Physical Location)"></textarea>
     <textarea id="f_strat" placeholder="6. Best Point Strategy"></textarea>
-    <textarea id="f_watch" placeholder="7. Watch Out / Custom Note"></textarea>
+    <textarea id="f_watch" placeholder="7. Watch Out / Drain Hazards"></textarea>
+    <textarea id="f_misc" placeholder="8. Misc / Personal Tournament Notes"></textarea>
     <div class="row"><button class="btn btn-sec" onclick="show('vList')">Cancel</button><button class="btn" onclick="saveForm()">Save</button></div>
   </div>
 </div>
 
-<div id="vKey" class="hidden">
+<div id="vImp" class="hidden">
   <div class="box">
-    <h3 style="margin-top:0;color:var(--gold);">Gemini API Key</h3>
-    <input type="password" id="kIn" class="inp" placeholder="Paste key from ://google.com">
-    <div class="row"><button class="btn btn-sec" onclick="show('vList')">← Back</button><button class="btn" onclick="saveKey()">Save Key</button></div>
+    <h3 style="margin-top:0;color:var(--gold);">Step 1: Copy Prompt & Open Gemini</h3>
+    <textarea id="pdfPromptBox" style="min-height:85px;font-size:12px;" readonly>Read the attached pinball rulesheet PDF and summarize it using these exact 9 labels on separate lines:
+NAME: [Official Machine Name + Manufacturer]
+CODE: [Latest code version + 1-line visual clue]
+SKILL: [Skill Shot + physical location in parentheses]
+MODES: [Theme name for modes + exact shots and physical locations to start them]
+MULTI: [Primary multiball + shots and physical locations to start]
+MULT: [Playfield multipliers + shots and physical locations]
+STRAT: [Best tournament point strategy & stacking]
+WATCH: [Drain hazards or ball-save quirks]
+MISC: [Extra tournament tips, wizard modes, or custom notes]</textarea>
+    <div class="row" style="margin-bottom:14px;">
+      <button class="btn btn-ok" onclick="copyPdfPrompt()">1. Copy Prompt</button>
+      <a href="https://google.com" target="_blank" class="btn" style="text-align:center;text-decoration:none;">2. Open Gemini ↗</a>
+    </div>
+    <h3 style="margin-top:0;color:var(--gold);">Step 2: Paste Gemini's Reply Here</h3>
+    <textarea id="jsonPasteBox" style="min-height:95px;font-size:12px;" placeholder="Paste the NAME: / CODE: / SKILL: reply here..."></textarea>
+    <div class="row"><button class="btn btn-sec" onclick="show('vList')">Cancel</button><button class="btn" onclick="importJsonCard()">Auto-Create Card</button></div>
   </div>
 </div>
 
@@ -116,54 +117,1126 @@ WATCH: [Drain hazards, ball-save quirks, or custom notes]</textarea>
 
 <div class="bar">
   <button class="btn btn-sec" onclick="show('vList')">Library</button>
-  <button class="btn btn-sec" onclick="openKey()">API Key</button>
+  <button class="btn btn-sec" onclick="show('vAddMenu')">+ Add</button>
   <button class="btn btn-ok" onclick="openExp()">Export AI</button>
 </div>
 
 <script>
-const DB = "pinball_ai_v5", KEY_DB = "pinball_gemini_key";
+const APP_VER = "v1.0";
+const DB = "pinball_caddy_" + APP_VER;
+document.getElementById("verBadge").textContent = APP_VER;
 const STARTERS = [
   {
-    name: "Fallout (Stern)",
-    code: "Stern v0.91+ (Clue: Check Pip-Boy LCD for Side Quests)",
-    skill: "Plunge to Right Inlane (lower-right) when bottle cap flashes to drop Nuka-Cola Spinner (upper-center), or short-plunge to steal Power Armor.",
-    modes: "Quests: Hit yellow food shots to reach 50+ HP, then shoot Sundries Optical Scoop (mid-right — easy backhand from right flipper) to start a Quest.",
-    multi: "Bash Deathclaw Toy (right-center) until it fights back for Deathclaw Multiball.",
-    mult: "Short-plunge at start of ball to steal Power Armor for temporary multiplier, or buy perks at Sundries Scoop (mid-right).",
-    strat: "Build HP with yellow shots first, start multiball Quests (Wedding Day or Kings) at Sundries Scoop (mid-right), and stack Song Modes with Deathclaw Multiball.",
-    watch: "Left side has a single pop bumper instead of left slingshot; watch for fast ejects from Sundries Scoop (mid-right)."
+    "name": "Fallout (Stern)",
+    "code": "v0.82 (Displayed on lower Pip-Boy LCD / backboard screen)",
+    "skill": "Time the full plunge to roll over the flashing Nuka-Cola insert on the right inlane, lowering the Nuka-Cola spinner (mid-right). Immediately rip the spinner with the right flipper for 3M base + 75k per spin and ball save.",
+    "modes": "Qualify Quests at scoop (mid-right) by boosting HP above 50 via left orbit (upper-left) or right ramp (mid-right). Wedding Day: 2-ball multiball making alternating blue/yellow shots across ramps/orbits, bash Deathclaw (center) 5x for add-a-ball, collect super jackpot at vault door (center). Radscorpion Attack: Lit shots build value, shoot center jump ramp (center) 4x, then finish at right standup targets (mid-right) or Fat Man launcher. The Kings: 2-ball multiball comboing lit shots up to 8x to light super jackpot at right standup target (mid-right). Mind Control: Lit ramps lower spinner (mid-right); rip spinner to advance levels. NOVAC: Shoot left orbit (upper-left) and right ramp (mid-right) 6x, then finish at pipboy ramps (mid-left / upper-left). Find the Target: Hit 3 yellow shots, scoop (mid-right), right ramp (mid-right), load Fat Man via pipboy ramps (mid-left / upper-left), then strike target at right standups (mid-right). Vault Modes / Lunchbox: Spell VAULT, shoot center ramp / vault door (center) to play mini-games or Find the Lunchbox.",
+    "multi": "Deathclaw Multiball: Shoot Deathclaw bash toy (center) when FIRE is lit to cripple 4 limbs; hit 4 radroach targets (standups) for add-a-ball. Wasteland Multiball: Complete 3-bank standups (mid-right), load launcher via pipboy ramps (mid-left / upper-left), clear enemies on left orbit (upper-left), U-turn (center-left), and right ramp (mid-right); super jackpot at upper pipboy ramp or center-right standup. Vault Multiball: Awarded on odd lunchboxes (3-ball); roving jackpot moves lower pipboy (mid-left) -> upper pipboy (upper-left) -> U-turn (center-left) -> center jump ramp (center) -> right ramp (mid-right), then upper loop (upper-left) for double, super jackpot at center jump ramp (center).",
+    "mult": "Power Armor 2x Playfield: Left pop bumper (upper-left) charges fusion core; once past 50%, hold action button to engage 2x playfield scoring for the duration of the core drain. Radio Jackpot multiplier stacks +1x per focus shot made. The Kings quest provides up to 8x shot multipliers via combos.",
+    "strat": "Pick The Ghoul for beginner survivability (radroaches restore HP instead of inflicting RAD) or Maximus for extended 2x Power Armor. Keep HP above 50 by hitting the left orbit (upper-left) to keep quests available at the scoop (mid-right). Stack Power Armor 2x playfield into Wasteland Multiball or Deathclaw Multiball for massive scoring. Use companions actively: Dogmeat spots radroaches, while Mr. Handy spots Deathclaw limbs.",
+    "watch": "Deathclaw kickback: On Premium/LE, hitting a crippled limb causes the Deathclaw (center) to rocket the ball directly back toward the drain. Striking already-dead radroaches inflicts RAD, truncating your HP and quest timers. Radio mode timers keep running while cradling the ball.",
+    "_src": "https://pinballrulesheets.com/stern/fallout-rulesheet"
   },
   {
-    name: "Harry Potter (Jersey Jack)",
-    code: "JJP v1.26 (Clue: Check 27-inch backglass UI for all 8 movie chapters)",
-    skill: "Plunge softly into Top Lanes / Upper Playfield Entrance (upper-right) or hit Right Spinner (lower-right) for early spell progress.",
-    modes: "School Years & Movie Scenes: Shoot Scoop (mid-right, tucked under upper-right flipper) to select and start a Year at Hogwarts.",
-    multi: "Shoot Center Ramp (center) and Right Ramp (center-right) to lower 8 House Banners, then shoot Grand Staircase (upper-center) for Explore Hogwarts Multiball.",
-    mult: "Build Bonus X via top lanes and upper-left Quidditch loops; use Potion/Spell upgrades and Protego (right outlane shield) to extend multiball runs.",
-    strat: "Lower House Banners first so you can bring Explore Hogwarts Multiball into a Year Mode started at Scoop (mid-right), then collect Horcruxes at Upper-Left U-Turn Ramp.",
-    watch: "Death Eater Drop Target (center-left) kicks rebounds back at lightning speed — always be ready to slap-save or nudge."
+    "name": "Pokemon (Stern)",
+    "code": "v0.87 - Meowth balloon lowers at center; LCD shows Kanto starters and biome travel",
+    "skill": "Plunge into flashing top lane for +2x Bonus X (+1x each subsequent, starts 500k). Super Skill Shot (hold left flipper & full plunge): center lane (center) completes BATTLE targets and lowers Meowth balloon (instantly starts Team Rocket Multiball + lights add-a-ball if qualified); town scoop (mid-right) lights Mystery. Secret Skill Shot: bounce into Psyduck sneak-in (mid-left) for 3x value (1.5M).",
+    "modes": "Story Modes: Shoot shots 3x (Level 1) or +5x (Level 2) to start Bulbasaur (left orbit), Squirtle (left ramp), Pikachu (right ramp), Charmander (right orbit). Completing training targets (mid-left) extends timer +20s. CATCH! Hurry-Up: Charge gauge via top lanes/bumpers, shoot captive ball (mid-left) to scan, hit lit purple targets to spell CATCH!, then shoot left ramp (mid-left) to catch (boosts next Story Mode up to 3x). Rival Battles: Lit at town scoop (mid-right) after catching Pok\u00e9mon; deal damage via lit shots, switch Pok\u00e9mon at town scoop (mid-right), win for Victory Bonus at left ramp (mid-left). Arena Battle: 6-boss gauntlet at town scoop (mid-right) after traveling to all 4 biomes.",
+    "multi": "Team Rocket Multiball 1 & 2: Spell BATTLE targets or super skill to lower Meowth balloon, hit balloon 4x/5x, then enter center lane (center) to start; add-a-ball by completing BATTLE targets and hitting Action Button. Pikachu vs. Raichu (2-ball) & Pikachu vs. Mimikyu (3-ball): Started from Pikachu (right ramp). Mini-Wizards: Pikachu vs. Lucario (up to 6-ball MB) & Pikachu vs. Charizard (4-ball MB) lit at right ramp (mid-right) after playing all four Level 1 or 2 Story Modes.",
+    "mult": "2x Playfield: Hit left and right Berry targets (beside left ramp / captive ball) twice each, then hit center Berry target to start 20s 2x playfield (refresh +5s via center Berry target, max 20s). Shot Multipliers: 2x (up to 3x) awarded to next shot made after completing any Story Mode or scoring 1st Super Jackpot in Team Rocket Multiball. Story Multiplier: +1x per caught Pok\u00e9mon (up to 3x). Team Rocket Multiplier: +1x per Rival Battle won (up to 3x). Bonus X: Advanced via top lanes (max 20x).",
+    "strat": "Catch wild Pok\u00e9mon early to build the 3x Story Mode multiplier before starting Level 2 modes or Pikachu multiballs. Win Rival Battles quickly to stack the permanent 3x Team Rocket Multiball multiplier. Stack 2x Playfield (Berries) with Team Rocket Multiball or Pikachu vs. Charizard for massive Super Jackpots. Work town targets to keep the alternating outlane ball save active at all times.",
+    "watch": "Arena Battle features disruptive boss phases: Gengar kills all playfield GI lights, and Metagross reverses flipper controls while blocking heals. Psyduck sneak-in ball saver on Premium/LE has zero grace period. Keep an eye on the alternating outlane ball save and steer with flipper presses.",
+    "_src": "https://pinballrulesheets.com/stern/pokemon-rulesheet"
+  },
+  {
+    "name": "Star Wars: Fall of the Empire (Stern Pinball)",
+    "code": "v0.98 (Check revision on boot screen or service menu)",
+    "skill": "Plunge into flashing shots for 1M (+1M per make). Hit within 3 switches for 2x Super Skill Shot (expires at 6 switches). Each shot awards unique perks: Bumpers (upper playfield) advance Ion Cannons; Left Orbit (far-left) gives +2 JEDI; Luke VUK (mid-left) spots 3 FORCE letters; Droids Target (center-left) spots Hoth lock; Death Star (upper-left) spots DS lock; Center Ramp (center) spots Falcon progress; Sarlacc Pit drop target (mid-right) spots Jabba progress; Right Ramp (center-right) awards 3 TIEs; Right Orbit (far-right) relights skill shots; Stormtrooper Target (right standup) starts hurry-up.",
+    "modes": "Rebel Missions, Falcon Features, Jabba Events, and Vader Modes. Rebel Missions: Complete FORCE standup targets (mid-left) to light 8 character modes. Shoot 4 blue shots, finishing at Luke VUK (mid-left). Falcon Features: Shoot Center Ramp (center) when engines are lit (qualify with Right Ramp on Pro or under-ramp target on Prem/LE) to start Lightspeed Escape, That's No Moon, Dogfight, etc. Jabba Events: Knock down Salacious Crumb drop target (mid-right) to shoot Sarlacc Pit (mid-right) and start Luke's Gift, Jabba's Palace, or Rancor Battle. Vader Modes: Qualified via return lanes and started at Vader Scoop (mid-left) when no other modes run.",
+    "multi": "Battle of Hoth Multiball: Hit Droids Target (center-left) to qualify 3 virtual locks at Luke VUK (mid-left). Collect jackpots, then Droids Target to spell AT-AT, lighting Super Jackpot at Luke VUK (mid-left). Death Star Multiball: Shoot Death Star Ramp (upper-left) to lock 3 balls. Collect 15 jackpots to light 20M Super Jackpot back at Death Star Ramp. Lightspeed Multiball: 2-ball started during Falcon Lightspeed Escape via Center Ramp (center). Add-A-Ball: Spin Sarlacc Pit (mid-right) 10 times during any multiball to light Action Button add-a-ball. Lightspeed and Hoth Multiballs can be stacked together.",
+    "mult": "Ion Cannon Shot Multipliers: Hits to Bumpers (upper playfield) charge Ion Cannons, eventually lighting pulsing Rebel Alliance inserts at major shots. Shoot a pulsing shot to lock in 2x at that lane for the rest of the ball. Lighting all shots upgrades the bonus to a roving 3x multiplier. Force Boost: Playing/completing Rebel Missions permanently boosts associated multiball jackpots by 2x, 3x, or 4x.",
+    "strat": "Play Rebel Missions early to earn permanent Force Boost jackpot multipliers across later multiballs. Stack Lightspeed Multiball with Battle of Hoth Multiball while running a high-value Rebel or Falcon mode. Charge Ion Cannons via Bumpers (upper playfield) and lock 2x playfield multipliers onto high-traffic jackpot shots like Center Ramp (center) and Luke VUK (mid-left). During multiballs, repeatedly send stray balls into Sarlacc Pit (mid-right) to secure the 10-spin Add-A-Ball.",
+    "watch": "Vader Modes cannot be stacked with multiballs and are untimed\u2014survive to finish at the Vader Scoop (mid-left). Missing the Salacious Crumb drop target (mid-right) can cause direct center drains. Lightspeed Escape has a tight countdown; draining or timing out completely cancels Lightspeed Multiball.",
+    "_src": "https://pinballrulesheets.com/stern/star-wars-fall-of-the-empire-rulesheet"
+  },
+  {
+    "name": "Dungeons & Dragons: The Tyrant\u2019s Eye (Stern)",
+    "code": "v1.11 - Rath dragon animatronic head center-stage and Faer\u00fbn map inserts between lower flippers",
+    "skill": "Short plunge to upper loop (upper-left) or Gelatinous Cube shortcut switch (mid-left). Super Skill: Left eject (lower-left) to side ramp (upper-right) to right ramp (mid-right). MXV Skill: Hidden Temple lane behind upper flipper (upper-left). Values base 2M x ball number; Super and MXV base at 6M.",
+    "modes": "Start Town Quests by shooting choose action shot at spinner (center) and traveling via blue shots. Locations feature: Greenest (Attack/Remove Dwarves, Caravan defense/assault, Abandoned Farm), Westgate (Zombie Sailors), Arabel (Retrieve Potion hurry-up), Kobold Town (Rescue Miners, Kobold Vault, Spy On Puck stealth), Dragonspear Castle (Prison Break, Graveyard), and Gauntlgrym (Slaad Assassin, Lifeblood Armor). Finish all quests in a town to start its multi-phase Town Dungeon. Stealth Missions require hitting lit shots while avoiding slings (lower playfield). Dungeon Crawl is lit via dungeon standups (mid-right) or center spinner (center) and started at pop-up scoop (center).",
+    "multi": "Dragon Multiball: Complete DRAGON on 3-bank targets under Rath (center) to light right orbit (far-right) and side ramp (upper-right) for 6/8-ball play. Hit Rath (center) repeatedly to damage him before drains deplete; defeating Rath immediately begins Town Celebration Multiball. Gelatinous Cube Multiball: Shoot left orbit (far-left) to lower entrance ramp, then shoot left ramp (mid-left) 1-4 times to trap ball on magnet and collect hurry-up.",
+    "mult": "Hidden Temple awards 2x playfield scoring timer (extended by Bard class); Dragon Multiball jackpots scale through 1x, 2x, and 3x levels before qualifying upper loop (upper-left) Super Jackpot; Town Celebration awards 4x Super Jackpot at side loop (upper-right).",
+    "strat": "Hold and release the Action Button to unleash roving Ranged Attacks to snipe red battle targets without risking drains; reload at any lane or ramp. Level up your character by fighting battles and exploring Dungeon Crawl levels for legendary equipment. Save healing potions to revive party members between Town Dungeon phases.",
+    "watch": "Hitting slingshots drains the Stealth meter during stealth objectives (severely penalizing Barbarians and Clerics); reaching 0% triggers an interrupt battle. In battles, watch red arrows flash faster as monsters prep attacks\u2014if all 4 party members hit 0 HP, the mode instantly fails. Failing to defeat Rath during Dragon Multiball forces a full drain flipper kill.",
+    "_src": "https://pinballrulesheets.com/stern/dungeons-dragons-the-tyrants-eye-rulesheet"
+  },
+  {
+    "name": "Metallica Remastered (Stern)",
+    "code": "v1.01 - Full-color LCD display with updated animations and band assets",
+    "skill": "Standard: Plunge for flashing top rollover (upper-lanes) for 200k (+50k/made); plunge right lane for 2x. Super Skill Shot: Hold left flipper to disable orbit post, then shoot any major shot for 2x value (+100k): Dead End target (mid-right) immediately qualifies 2x Playfield; Scoop (mid-left) lights/collects Mystery; Blue Spider Arrow shot qualifies that lane for Coffin Hurry-Up; Rollovers (upper-lanes) award 2x (4x on right rollover).",
+    "modes": "Crank It Up: Collect 12 of each item (Electric Chairs, Grave Markers, Snakes, Coffins) to light Scoop (mid-left). Modes include For Whom the Bell Tolls (light inserts across all shots), Fade to Black (switch hits build jackpot), Battery (repeated shots to Sparky (center) with combo multipliers), and Enter Sandman (hit roving solidly lit inserts). Cash out built jackpot at Scoop (mid-left) after hitting all 4 main features, or risk continuing. Side modes: 72 Seasons (frenzy via 72 switches after pick targets), Hardwired Hurry-Up (light all 5 major shots, scoop (mid-left)), Lady Justice (spell METALLICA via left ramp (mid-left) and right ramp (mid-right), alternate sides), FUEL Fast Scoring (complete FUEL targets (lower-right)), Seek & Destroy (collect 5 Coffin Hurry-Ups; alternate lit seek shot and Captive Ball (mid-left)).",
+    "multi": "Electric Chair Multiball: Hit Sparky (center) 10x to start; shoot left orbit (outer-left), right orbit (outer-right), and Sparky (center) to charge Jacob's Ladder for Super Jackpot at Sparky. Grave Marker Multiball: Knock down 3 inline drop targets (center-left) and hit Grave Marker target behind them; hit major shots, then Grave Marker to hold ball on magnet, hit 3 shots to boost multiplier up to 5x, knock ball off magnet for Super Jackpot. Snake Multiball: Complete SNAKE at Snake (mid-right) to start; non-Snake shots build Snake Combo up to 3x, collected at Snake (mid-right). Coffin Multiball: Hit Captive Ball (mid-left) to lock 3 balls; alternate Captive Ball (mid-left) and flashing shots for Jackpots/Super Jackpot (can stack with another multiball!). Add-a-ball / MB 2x: Complete 4 Pick targets (standups) during any MB to light Snake (mid-right) for timed lock, 2x Playfield (20s), and add-a-ball.",
+    "mult": "2x Playfield: Complete FUEL targets (lower-right) to light Dead End target (mid-right) for 20s. Snake Multiball Add-A-Ball 2x: Lock ball at Snake (mid-right) during MB for 20s of 2x playfield. Multipliers stack additively for 4x Playfield! Grave Marker Super Jackpot multiplier can be built up to 5x while ball is held on the magnet. Snake Combo multiplier reaches up to 3x at Snake (mid-right).",
+    "strat": "Always look to stack Coffin Multiball with either Electric Chair (center) or Grave Marker (center-left) multiballs. During multiballs, immediately focus on completing Pick targets (standups) to lock a ball at Snake (mid-right) for the add-a-ball and 2x playfield, and hit Dead End target (mid-right) to stack FUEL 2x for a combined 4x playfield. Use Super Skill Shot on Dead End target (mid-right) for instant 2x playfield. In Crank It Up, mystery at Scoop (mid-left) awards a free mode advance; cash out when control gets shaky, as draining un-cashed loses the jackpot.",
+    "watch": "Direct hits to Sparky (center) rebound dangerously fast straight down the middle. Incomplete shots to the inline drop targets (center-left) or Captive Ball (mid-left) can ricochet unpredictably into outlanes. Snake (mid-right) rejections frequently threaten the right drain. Ball save during Crank It Up modes is extremely brief\u2014do not lose control early.",
+    "_src": "https://pinballrulesheets.com/stern/metallica-remastered-rulesheet"
+  },
+  {
+    "name": "The Uncanny X-Men (Stern)",
+    "code": "v0.98 - Giant interactive Sentinel head in upper playfield with lower-level Danger Room mini-playfield",
+    "skill": "Plunge options: soft plunge into lane near Highway ramp (mid-right) for 200k & +1 Bonus X; hit X-Jet shot (far-left) into X-Mansion ramp for +3 Bonus X, then hit Danger Room exit ramp (lower-left) for Super Skill Shot; shoot Downtown loop (left loop) up to 5 times for combo timer extension (+15s ball save if finished at Uptown left ramp); or shoot Uptown ramp (mid-left) for Cerebro Skill Shot. Follow Cerebro Skill Shot with Highway ramp (mid-right) -> X-Jet (far-left) -> Danger Room ramp (lower-left) for MXV Super Skill Shot (15M and instant Danger Room Level 3).",
+    "modes": "Shoot white shots to qualify, then start at Midtown center ramp (center) or Subway right loop (far-right). Complete a mode to trigger The Future (Sentinel defeat or Escape Nimrod) for permanent perks. Level 1 Danger Room doubles mode values. Easy Missions: Rescue the Innocent (Bishop) - 6 red shots, boosted by Bishop pop (upper-left); Bitter Rivalry (Wolverine) - 4 shots, blue scores higher; Smuggled Cargo (Gambit) - 7 blue shots, moving purple awards 2x; Stopping a Juggernaut (Professor X) - alternate red shots and targets. Challenging Missions: Sentinel Facility Raid (Rogue) - 8 moving shots from left to right; A Fiery Assault (Storm) - turn red shots blue, hit 3 blue shots; Mayhem in Midtown (Colossus) - hit standup targets to light flanking yellow/red shots, make 5; Genosha Under Siege (Magneto) - red shots hit Magneto, roving green shots hit Toad for 2x.",
+    "multi": "Sentinel Multiball: Hit Sentinel head (upper-center) to spawn, damage integrity until mouth opens, hit inside to start; shoot yellow jackpots (relight/multiply via Danger Room ramp (lower-left)), collect Super Jackpot at Sentinel head (2x in mouth). Save the City: Shoot 6 primary ramps/loops 3x each, start at Midtown ramp (center) or Subway loop (far-right); collect 5 jackpots via playfield feature qualification, then X-Jet ramp (far-left) lights Danger Room spinner (lower-left) for timed 1M-per-spin Super Jackpot. To Me, My X-Men: Spell Cerebro 3x via purple Nightcrawler targets (mid-left/mid-right) and ramps feeding post; shoot blue shots for 6 jackpots, then Uptown ramp (mid-left) for Super Jackpot (or Danger Room ramp (lower-left) for 2x Super). Berserker Multiball: Defeat 35 Sentinels across game; start at Uptown ramp (mid-left); 3-ball play, shoot 5 yellow jackpots then X-Jet ramp (far-left) for Super Jackpot and Danger Room ramp (lower-left) for 2x Super.",
+    "mult": "Danger Room Level 1 doubles all mode scoring; Gambit pop bumper (mid-right) awards 2x next shot (3x with Gambit perk, instantly qualified via right inlane Shatz/alley pass); Bishop action button spots highest lit mode shot; Danger Room Level 3 doubles Sentinel values/kills in The Future; Bonus X built via Cerebro Bonus Build targets near left flipper.",
+    "strat": "Prioritize Danger Room training during single-ball play to reach Level 1 (green) before starting any mission to guarantee 2x scoring. Complete Smuggled Cargo and Bitter Rivalry early to unlock Gambit (3x shot multiplier) and Wolverine perks. Stack qualified multiballs onto active missions to blow up scoring and safely farm the 35 Sentinel kills needed for Berserker Multiball. Utilize the Fastball Special combo (right inlane to left ramp to Sentinel head) to skip phases of Sentinel Multiball qualification.",
+    "watch": "Draining out of the lower Danger Room mini-playfield can be lethal if Abort Ball Save is not active (qualify via 3 X-Jet entries). In competition, extra balls are disabled (Beast Lab level 3 qualifies Beast instead). Bishop action button is completely disabled during Escape Nimrod.",
+    "_src": "https://pinballrulesheets.com/stern/the-uncanny-x-men-rulesheet"
+  },
+  {
+    "name": "Transformers: More Than Meets the Eye (Stern 2026)",
+    "code": "v0.96 with original G1 incarnation layout",
+    "skill": "Short plunge to upper flipper, then hit Optimus / standup target (mid-right), side ramp (upper-right), or space bridge (upper-left) to score a skill shot.",
+    "modes": "Autobot Run, Energized, Rusted, Microbots, Solar Needle, Prime Target, Golden Lagoon, War, Island, S.O.S., Interference",
+    "multi": "Transformers Multiball, Combiner Multiball, Tech Spec Mania, Island Multiball",
+    "mult": "2x to 4x shot multipliers via final blows, tech specs, and combo sequences",
+    "strat": "Complete missions via Megatron's scoop (mid-right), build Energon cubes with the center spinner, collect tech specs from standup targets, and manage Combiner parts at the side ramp (upper-right).",
+    "watch": "Drain timers during timed modes, red damage shots in One Shall Fall, and the Countdown to Extinction right outlane save on the last ball.",
+    "_src": "https://pinballrulesheets.com/stern/transformers-more-than-meets-the-eye-rulesheet"
+  },
+  {
+    "name": "The Walking Dead Remastered (Stern, 2025)",
+    "code": "Rev. 0.93 + Walker kills counter displayed above the flippers",
+    "skill": "Plunge with right timing to pass through rollovers, then plunge into flashing lane by cycling with flippers (scoring 250k + 500k per skill shot)",
+    "modes": "Barn (left orbit), CDC (left ramp), Riot (Riot shot), Tunnel (Tunnel shot), Arena (right ramp), Escape Terminus",
+    "multi": "Prison Multiball, Well Walker Multiball, Blood Bath",
+    "mult": "2x playfield activated via Tower target",
+    "strat": "Accumulate 115 total Walker kills to light and reach the Last Man Standing wizard mode",
+    "watch": "Horde, Siege, Crossbow Frenzy, Last Man Standing",
+    "_src": "https://pinballrulesheets.com/stern/the-walking-dead-remastered-rulesheet"
+  },
+  {
+    "name": "King Kong: Myth of Terror Island (Stern 2025)",
+    "code": "v0.97 - lush island adventure theme with deep Elwin layout",
+    "skill": "Plunge to pit targets, river lane, outlanes, or upper-left flipper for reflex shots",
+    "modes": [
+      "Save Ann (mid-right)",
+      "Cross the Chasm (upper-left)",
+      "Pterodactyl Attack (far-right)",
+      "Stegosaurus Encounter (center)",
+      "Escape the Swamp (right loop)"
+    ],
+    "multi": [
+      "King Kong Multiball",
+      "Spider Pit Multiballs",
+      "Lost Temple Multiball",
+      "Spider Queen Multiball"
+    ],
+    "mult": "2x / 3x scoring, combo multipliers, and super jackpots",
+    "strat": "Complete all 5 island scenes, climb the building, and spell KING KONG to reach 8th Wonder wizard mode",
+    "watch": "Keep track of map segments, treasure hunts, and island locks",
+    "_src": "https://pinballrulesheets.com/stern/king-kong-myth-of-terror-island-rulesheet"
+  },
+  {
+    "name": "John Wick (Stern, 2024)",
+    "code": "v1.02 | Enemies (blue circles) multiply lit shot values during jobs and multiballs.",
+    "skill": "Plunge into right VUK for crate skill shot (Baba Yaga if no switches hit) (upper-right)",
+    "modes": "Night Watch (left eject), Assassination (left orbit), Security Detail (left ramp), VIP Award (Red Circle), Heist (center ramp), Gather Intel (right orbit), Task a Crew (right ramp)",
+    "multi": "Car Chase Multiballs, Excommunicado Multiball, Deconsecrated Multiball",
+    "mult": "Up to 4x (via 3 enemies)",
+    "strat": "Spell WINSTON at captive ball (mid-right) to light locks for Deconsecrated Multiball at center ramp; hit Red Circle (mid-left) to build level for Excommunicado Multiball; bash car (mid-left) to light Car Chase Multiball at left orbit (upper-left).",
+    "watch": "Red Circle Reckoning, The Staircase, The Duel, Special Assignment",
+    "_src": "https://pinballrulesheets.com/stern/john-wick-rulesheet"
+  },
+  {
+    "name": "Jaws (Stern 2024)",
+    "code": "v1.01 | Chase the shark, rescue beachgoers, and close Amity's beaches",
+    "skill": "Plunge into pop bumper (left-upper), lane above mini-flipper (mid-right), or flashing left target bank (mid-left)",
+    "modes": "Night Swim, Beach Panic, Scars, Pond Attack, Raft Attack",
+    "multi": true,
+    "mult": "Jaws Multiballs, Bounty Hunt Multiballs, Search & Rescue Multiballs, Great White Multiball",
+    "strat": "Complete shark encounters via captive boat (mid), chum the water at the captive ball (mid) to build the chum line, attach barrels at the shark fin (mid-right) to start Jaws Multiball, and rescue beachgoers using shark tower targets (mid-left / mid-right)",
+    "watch": "Keep an eye on the chum line progress, beach closed hurry-up timers, and the shark's health during bounty hunt multiballs",
+    "_src": "https://pinballrulesheets.com/stern/jaws-rulesheet"
+  },
+  {
+    "name": "Venom (Stern 2023)",
+    "code": "v1.06 (Fast chaotic Dwight Sullivan ruleset featuring chaotic symbiote hosts and cascading multiballs)",
+    "skill": "Plunge into the flashing rollover lane for +2 bonus X, or shoot Secret Hideout saucer at orbit apex for 3M + 500k/shot + 4x bonus",
+    "skill_shots": "Plunge into the flashing rollover lane for +2 bonus X, or shoot Secret Hideout saucer at orbit apex for 3M + 500k/shot + 4x bonus",
+    "modes": "Riot, Agony, Phage, Lasher, Grendel, Knull",
+    "multi": "Mayhem Multiball, Carnage Multiball, Quick Doppelganger Multiball (Prem/LE), Klyntar Multiball, Toxin Team-Up",
+    "mult": "7x",
+    "strat": "Complete mini-mode columns to light minor boss battles at the center ramp, lock balls in the left/right canisters for Mayhem Multiball, and build playfield multiplier via the center ramp to bell tower target sequence",
+    "watch": "Keep track of active battle mode timers and watch for sudden Doppelganger attacks on the right side of the playfield",
+    "_src": "https://pinballrulesheets.com/stern/venom-rulesheet"
+  },
+  {
+    "name": "Foo Fighters (Stern)",
+    "code": "v1.04 - Van tour and robot battle setup",
+    "skill": "Plunge into Rock-O-Meter lane (mid-right) or sonic radio targets (mid-left)",
+    "modes": "Van Modes (cities), MOD-ulator Frenzy, Bot Frenzy, Supersonic Radio",
+    "multi": "Overlord Multiballs, Area 51 Multiball, Combotron Multiball",
+    "mult": "2x / 3x Playfield Multiplier via Rock-O-Meter lane (upper-right)",
+    "strat": "Tour cities via van modes, charge action button with UFO captive ball (mid-right), and collect van mods for bonuses",
+    "watch": "Drain out of Area 51 Multiball on Prem/LE for fresh jackpots at the secret files target (upper playfield)",
+    "_src": "https://pinballrulesheets.com/stern/foo-fighters-rulesheet"
+  },
+  {
+    "name": "007 60th Anniversary (LE) - Stern",
+    "code": "Code Rev: January 2023 (Spinning disc with Oddjob's hat)",
+    "skill": "Plunge for flashing 007 top lane, hold left flipper and shoot hole behind linear drop targets, short plunge to Q target, or full plunge to M target",
+    "modes": "Zorin (Super Pops), Trevelyan (Super Loops), LeChiffre (Super Shots), Blofeld (Super Drops), Oddjob (Super Disc), Jaws (Super Spinners)",
+    "multi": "Mission Multiball, Villain Multiball, Gadget Multiball, Bond Multiball, 007 Multiball",
+    "mult": "A, B, C standup targets advance bonus multiplier up to 3x",
+    "strat": "Complete MI6 drop target bank to select and start villain modes, complete BOND drop targets for Q gadgets, and collect all six Bonds to light left scoop for Bond Multiball",
+    "watch": "Spinning disc (center), MI6 drop targets (mid-right), Inline drop targets (right), Left scoop (left), Right scoop (right)",
+    "_src": "https://pinballrulesheets.com/stern/007-60th-anniversary-rulesheet"
+  },
+  {
+    "name": "James Bond 007 (Stern 2022)",
+    "code": "v1.01 (Espionage journey across assignments)",
+    "skill": "Undercover (Hold left flipper, full plunge, right ramp within 5 switch hits for 2.5M + smart missile)",
+    "modes": "Villain Modes (right ramp), Henchmen Modes (side ramp), SPECTRE Weapons (Goldfinger target), Q Branch (DB5 eject)",
+    "multi": "Bird One Multiball, Jetpack Multiball, \u201cBond\u2026 James Bond\u201d Multiball",
+    "mult": "Up to 7x via 007 Scoring (upper loop)",
+    "strat": "Collect smart missiles via skill shots, complete SPECTRE targets for jackpot boosts, and leverage Q Branch gadgets",
+    "watch": "Upper loop (Bond Women), Right ramp (Villain), Side ramp (Henchmen), DB5 eject (Q Branch)",
+    "_src": "https://pinballrulesheets.com/stern/james-bond-007-rulesheet"
+  },
+  {
+    "name": "Rush (Stern 2022)",
+    "code": "Rev. 1.14 | Time travel across galaxy to reach 2112",
+    "skill": "Shoot upper scoop (3x), side ramp (2x), or side loop (1x) behind upper flipper",
+    "modes": "Tom Sawyer, Working Man, The Spirit of Radio, The Big Money, La Villa Strangiato, Limelight",
+    "multi": "Red Barchetta Multiball (mid-right), Subdivisions Multiball (upper-left), Fly By Night Multiball (mid-left), Far Cry Multiball (upper scoop), Headlong Flight Multiball (right orbit), Freewill Multiball (instrument lane)",
+    "mult": "Up to 25x Bonus X via spinning (spinner lane); 2x-4x shot multipliers via colored records",
+    "strat": "Advance the Time Machine by completing planet modes (+5 years) and multiball super jackpots (+2 to +5 years) to reach 2112; collect 10 albums via 1-2-3 combos to power The Weapon action button; complete RUSH standups (mid-left) and right ramp for Bastille Day hurry-ups",
+    "watch": "Drain before starting wizard modes; managing multiball stacking and tracking active instrument timer perks (60s)",
+    "_src": "https://pinballrulesheets.com/stern/stern-rush-rulesheet"
+  },
+  {
+    "name": "Jurassic Park (Home Edition) - Stern (2021)",
+    "code": "v1.03 - Compact home layout featuring T-Rex and Raptor Pen",
+    "skill": "Plunge to center top lane (top), hold right flipper and full plunge for Deadflip Skill Shot into raptor pin (lower-right), or hold left flipper and full plunge into right ramp (upper-right) for Secret Skill Shot",
+    "modes": "Escape Nublar (center T-Rex), Restore Power (center T-Rex)",
+    "multi": "T-Rex Multiball, Raptor Tri-Ball, Escape Nublar",
+    "mult": "Jackpots at T-Rex (center) and flashing arrow shots",
+    "strat": "Evacuate 5 dinosaurs by shooting major paddocks 3 times to enter and 6 times to capture, launch Smart Missiles to boost paddock values, rescue workers via control room targets (left), and stack multiballs for massive scores",
+    "watch": "Spinosaurus captive ball timer (mid-right) which never stops, and managing volcano eruption sequences during wizard modes",
+    "_src": "https://pinballrulesheets.com/stern/jurassic-park-home-rulesheet"
+  },
+  {
+    "name": "Godzilla (Stern 2021)",
+    "code": "v1.16 - Monster Monitor / Kaiju Battle tracking UI",
+    "skill": "Short plunge (switch under bumper), shooter lane plunge, or plunge to left spinner lane",
+    "modes": "RAID - Kaiju Battles, POWER - Tesla Strike, BRIDGE - Bridge Attack Multiball, TANKS - Tank Attack Multiball",
+    "multi": "Godzilla Multiball, Mechagodzilla Multiball, Saucer Attack Multiball, Planet X Multiball",
+    "mult": "Up to 5x (Jackpot levels), plus up to 4x (Super Jackpot multipliers via Wallop shot and Super Jackpots)",
+    "strat": "Complete city objectives to light Destruction Jackpot at the building (mid-right) and access City Select via the scoop (mid-right). Cycle through cities to complete Kaiju Battles (RAID) and unlock Planet X.",
+    "watch": "Managing multiball stacks, watching ball saves (Mothra save on left outlane), and timing Kaiju Battles so they aren't blocked by active multiballs.",
+    "_src": "https://pinballrulesheets.com/stern/stern-godzilla-rulesheet"
+  },
+  {
+    "name": "The Mandalorian (Stern 2021)",
+    "code": "v1.42 + Mando helmet mini-playfield",
+    "skill": "Plunge into CHILD top lanes (upper-middle) for skill shot awards",
+    "modes": "Find the Asset (scoop)",
+    "multi": "Razor Crest Multiball (center ramp)",
+    "mult": "6x Max Playfield Multiplier",
+    "strat": "Stack Missions with Razor Crest Multiballs and utilize playfield multipliers for massive scoring.",
+    "watch": "Keep an eye on active Playfield Multiplier timers and Beskar accumulation at the Foundry (left scoop).",
+    "_src": "https://pinballrulesheets.com/stern/the-mandalorian-rulesheet"
+  },
+  {
+    "name": "Led Zeppelin (Stern 2021)",
+    "code": "v1.20 | Dynamic lit shots synced to band catalog with Icarus X multiplier mechanics.",
+    "skill": "Plunge to hit the moving LED target (mid) for 500k and 5 seconds of ball save.",
+    "modes": "Good Times, Bad Times, Communication Breakdown, Whole Lotta Love, Immigrant Song, Kashmir, Black Dog, Ramble On, Rock and Roll, Trampled Under Foot, The Song Remains the Same",
+    "multi": "Zeppelin Multiball, Electric Magic Multiball, Electric Magic Frenzy, US 1975 Tour Multiball, US 1977 Tour Multiball, Earl's Court Tour Multiball, UK 1971 Tour Multiball, Mothership Multiball, World Tour Multiball, Top of the Charts Multiball, Celebration Day Multiball",
+    "mult": "Up to 4x (Icarus X playfield multiplier built via target banks and combos)",
+    "strat": "Alternate between song mode shots to collect gold records, build Icarus X via combos and target banks (far-left standups, LED, ZEP, ROCK, Icarus), and manage tours at the left eject.",
+    "watch": "Left outlane ball save (far-left standups), Extra Ball at left eject, Action Button Band Boosts.",
+    "_src": "https://pinballrulesheets.com/stern/led-zeppelin-rulesheet"
+  },
+  {
+    "name": "Avengers: Infinity Quest (Stern)",
+    "code": "v1.08 with swirling disc shots",
+    "modes": "Mind Gem (mid-right)",
+    "multi": "Iron Man Multiball",
+    "mult": "2x",
+    "strat": "Make four combos early to light the disc for Portal Lock, doubling gem quest scoring and enabling multiball.",
+    "watch": "Right ramp",
+    "_src": "https://pinballrulesheets.com/stern/avengers-infinity-quest-rulesheet"
+  },
+  {
+    "name": "Teenage Mutant Ninja Turtles (Stern, 2020)",
+    "code": "v1.50 - Shredder and his Foot Clan loom over the playfield.",
+    "skill": "Plunge into the flashing top lane (right) or shoot the lit turtle shot within 15 seconds (mid-playfield).",
+    "modes": "Pizza-o-Meter (mid-left)",
+    "multi": true,
+    "mult": "Turtle Power Multiball and Ninja Pizza Multiball",
+    "strat": "Stack Episodes with main multiballs, build the 2x Playfield (mid-middle), and complete Training Modes via the LAIR Target (lower-left).",
+    "watch": "Keep an eye on the episode timer and multi-ball jackpots at the Krang Loop (upper-center).",
+    "_src": "https://pinballrulesheets.com/stern/stern-tmnt-rulesheet"
+  },
+  {
+    "name": "Stranger Things (Stern 2019)",
+    "code": "v1.09 | The Upside Down is invading the playfield",
+    "skill": "Plunge for flashing drop target (mid) or soft plunge to kicker (mid-right)",
+    "modes": "Where\u2019s Barb?, Monster Hunting, Bullies, Get Me Out!, Operation Mirkwood, Follow The Compass, Quarter Hunt, Save Will, What Mama Says, Morse Code, Lure Dart, Turn Up the Heat",
+    "multi": "Telekinesis Multiball, Total Isolation, Demodog Attack, Demogorgon Modes, Send it Back, Light the Fire",
+    "mult": "Up to 5x Bonus X (inlanes), 2x Scoring (saucer), 2x/3x Super Jackpot (Prem/LE magnet)",
+    "strat": "Complete all 6 center objectives to reach Final Showdown; stack Telekinesis Multiball with chapters and Demodog attacks",
+    "watch": "Left outlane (Spell of Protection), burn it back loop, drop targets",
+    "_src": "https://pinballrulesheets.com/stern/stranger-things-rulesheet"
+  },
+  {
+    "name": "Elvira\u2019s House of Horrors (Stern 2019)",
+    "code": "v1.01 - House entrance lit purple indicates haunted mansion modes",
+    "skill": "Plunge into Dead End lanes (upper-right) for points and bonus X, or into the Back Door (upper) for 1M+ and instant Haunt qualification.",
+    "modes": "Haunts (House Entrance - mid-center)",
+    "multi": "Garage Multiballs (Garage - mid-left), Trunk Multiball (Trunk - mid-right), Phone-A-Fiend Multiball (Trunk - mid-right), House Party (House Entrance - mid-center), They Came From Space (House Entrance - mid-center)",
+    "mult": "Deadhead Family Crypt (Crypt - mid-right), Freak Fryer (switch hits), Gar-Goils Gone Wild (Gar-Goil targets - upper)",
+    "strat": "Complete Haunts to advance B-Restorator rank toward Director\u2019s Cut, collect Junk items to unlock Phone-A-Fiend, and defeat Deadheads to light outlane saves.",
+    "watch": "Drain during high-level Gappa Angry! stages which triggers panic multiballs (Pool Party, Dance Fever, Make-Out Mayhem, Scream Test, Run For Your Life).",
+    "_src": "https://pinballrulesheets.com/stern/elvira-s-house-of-horrors-rulesheet"
+  },
+  {
+    "name": "Jurassic Park (Stern)",
+    "code": "v1.16 - Isla Nublar dinosaur chaos and staff rescue mission",
+    "skill": "Plunge full combo sequence: left ramp (mid-left), right ramp (mid-right), side ramp (upper-right), right orbit (far-right)",
+    "modes": "Feed T-Rex (mid-left ramp), T-Rex Chase (mid-left ramp), T-Rex Encounter (mid-left ramp), T-Rex Rampage (mid-left ramp), Virus Attack (control room), Restore Power (control room), System Boot (control room)",
+    "multi": "Chaos Multiball, Raptor Tri-Ball, King of the Island Multiball, Invalid Frenzy, T-Rex Multiball",
+    "mult": "2x to 6x Skill Shots, 2x Supply Drop scoring, Super Spinner multipliers",
+    "strat": "Spell MAP via white arrows to advance Paddocks, rescue staff before the dinosaur escapes, collect Fossils to light wizard modes, and manage T-Rex events to build massive jackpots.",
+    "watch": "Keep track of dinosaur aggression and staff in peril to prevent staff injuries, and monitor Paddock escape timers.",
+    "_src": "https://pinballrulesheets.com/stern/stern-jurassic-park-rulesheet"
+  },
+  {
+    "name": "Black Knight: Sword of Rage (Stern 2019)",
+    "code": "v1.14 - Slay monsters and defeat the Black Knight",
+    "skill": "Plunge the lit top lane or shoot the light lock target for skill shot; hold left flipper and hit a center shot (flail, center target, shield) or catapult for super skill shot",
+    "modes": "Mud Bog, Molten Fire, Burning Sands, Wicked Cavern, Deep Freeze, Black Castle",
+    "multi": "Triple Knights Challenge, Catapult Multiball, KNIGHT Multiball, The King's Ransom, Rage Multiball",
+    "mult": "WAR lane completions",
+    "strat": "Qualify battles by shooting center shots then the ramp (mid-right); charge Sword of Rage via drop targets (mid-right) and center target (mid) for 2x scoring; collect KNIGHT letters for multiballs; use Magna-Save at the right outlane to cash out Super Modes",
+    "watch": "Drain down the right outlane; manage mode timers and keep shots accurate during Black Castle",
+    "_src": "https://pinballrulesheets.com/stern/black-knight-sword-of-rage-rulesheet"
+  },
+  {
+    "name": "The Munsters (Stern 2018)",
+    "code": "Rev. 1.24 - Supernatural family playfield featuring Herman, Lily, Grandpa, and Spot modes",
+    "skill": "Plunge into the lit right lane or hold left flipper to shoot the right ramp (500k) (upper-right)",
+    "modes": [
+      "Herman Hurry-Up / Multiball",
+      "Spot",
+      "Lily Frenzy",
+      "Enlarging Ray / Grandpa's Lab",
+      "Raven Multiball",
+      "Munster Madness"
+    ],
+    "multi": true,
+    "mult": "2x, 3x, 6x via Kitty Target (mid-right)",
+    "strat": "Complete all family member modes to qualify Munster Madness wizard mode and stack Super Jackpots at the Dragula Lane (upper-right) using the Playfield Multiplier.",
+    "watch": "Watch for risky feeds during Spot shots and multi-ball ball management.",
+    "_src": "https://pinballrulesheets.com/stern/the-munsters-rulesheet"
+  },
+  {
+    "name": "Deadpool (Stern 2018)",
+    "code": "v1.10 - Cartoon-style comic book brawler featuring Merc with a Mouth",
+    "skill": "Lane Skill Shot (shooter lane), Super Skill Shot (right ramp), MXV Skill Shot (right orbit to right ramp), Super Secret Skill Shot (SNIKT target to right ramp)",
+    "modes": "Juggernaut, Mystique, Sabretooth, T-Rex Quest, Megalodon Quest, Sauron Multiball, Clone Multiball, The Megakrakolodonus Rex, The Final Battle",
+    "multi": "Ninja Multiball, Disco Multiball, Mechsuit Multiball, Clone Multiball, Sauron Multiball, Lil' Deadpool Multiball",
+    "mult": "Playfield X (up to 5x via SNIKT target and right ramp combo)",
+    "strat": "Balance starting Battles at the scoop (mid-right) with advancing the chimichanga truck via the right orbit (far right) to reach Quests, while locking balls at the right ramp (upper-right) for Ninja Multiball.",
+    "watch": "Track health bars during Battles, manage timer countdowns in Quests and wizard modes, and keep an eye on active Playfield multipliers and weapon collections.",
+    "_src": "https://pinballrulesheets.com/stern/deadpool-rulesheet"
+  },
+  {
+    "name": "Iron Maiden: Legacy of the Beast (Stern)",
+    "code": "v1.10 - Eddie on the playfield",
+    "skill": "Soft plunge into skill shot target (mid-right) or hold left flipper and plunge to inner orbit (upper-left)",
+    "modes": "Aces High, Fear of the Dark, Rime of the Ancient Mariner, Hallowed Be Thy Name, Flight of Icarus",
+    "multi": "Cyborg Multiball, Trooper Multiball, Mummy Multiball, 2 Minutes to Midnight, Can I Play With Madness, Run To The Hills",
+    "mult": "2x or 3x Playfield Multiplier via X targets (mid-field)",
+    "strat": "Stack single-ball Eddie battles with Trooper or Mummy Multiball to easily qualify Soul Shards",
+    "watch": "Bullseye target (center) and Orb target (upper-right)",
+    "_src": "https://pinballrulesheets.com/stern/iron-maiden-pinball-rulesheet"
+  },
+  {
+    "name": "Guardians of the Galaxy (Stern)",
+    "code": "v0.87 (Flash-animated character inserts on the playfield)",
+    "skill": "Plunge into the flashing top lane (top lane), hold the left flipper to shoot the flashing white shot (Orb, right ramp, or right orbit), or execute a hands-free plunge",
+    "modes": "Antiquities Shop (Orb), Knowhere (right orbit), Escape Kyln (Rocket), Pod Chase (left ramp), Quill's Quest (scoop), Sanctuary (left orbit), Sibling Rivalry (right ramp), Yaka Arrow (\u201cdead-end\u201d lane)",
+    "multi": "Rocket\u2019s Rampage 2x Scoring, Nova Corps 2x/3x scoring",
+    "mult": "Groot Multiball, Orb Multiball",
+    "strat": "Upgrade modes via the right scoop, utilize Hadron Enforcer targets for mode/multiball progression, and spell GUARDIANS to light mystery awards",
+    "watch": "Cherry Bomb Multiball, Immolation Initiative, Save Xandar",
+    "_src": "https://pinballrulesheets.com/stern/guardians-of-the-galaxy-pinball-rulesheet"
+  },
+  {
+    "name": "Star Wars (Stern)",
+    "code": "v1.31 (Original Trilogy table with action button shot multiplier controls)",
+    "skill": "Shoot the flashing 3-bank target for Bonus X or the roving FORCE target to spot the next award",
+    "modes": "Death Star, Endor, Hoth, Tatooine",
+    "multi": "Victory Multiball, TIE Fighter Multiball, Hyperspace Multiball, Jedi Multiball",
+    "mult": "2x to 20x (up to 40x with Double Multipliers award)",
+    "strat": "Keep track of shot multipliers and use the center target bank to reset timers; stack TIE Fighter or Hyperspace Multiballs during final planet multiballs",
+    "watch": "Shot multipliers timing out and leaving the ball vulnerable while mashing the action button for TIE Fighters",
+    "_src": "https://pinballrulesheets.com/stern/star-wars-stern-rulesheet"
+  },
+  {
+    "name": "Aerosmith (Stern 2017)",
+    "code": "v1.11.0 - Jester-themed shooting gallery with songs determining lit playfield shots",
+    "skill": "Plunge lightly into lock saucer for Hidden Skill Shot (500k + 1 Smart Missile) or hold left flipper and short plunge to right flipper for Super Skill Shot (1M + 2 Smart Missiles)",
+    "modes": "Rats in the Cellar, Dude Looks Like A Lady, Back in the Saddle, Sweet Emotion, Walk This Way, Same Old Song & Dance, Last Child",
+    "multi": "Toybox Multiball, Elevator Multiball, Medley Multiball, Final Tour",
+    "mult": "2x Playfield Targets (Prem/LE), Shot Multipliers (complete AEROSMITH targets)",
+    "strat": "Complete songs by hitting lit shots, use Crank It Up at left scoop to ease mode progression, lock balls in toybox and elevator for multiballs, and complete AEROSMITH targets for multipliers and mystery",
+    "watch": "VIP Pass at right outlane, Dead Shot Jackys at left of display, and toybox/elevator lock statuses",
+    "_src": "https://pinballrulesheets.com/stern/aerosmith-rulesheet"
+  },
+  {
+    "name": "Batman '66 Stern",
+    "code": "Rev. 1.03 + Campy 1966 Gotham television series presentation featuring LCD display",
+    "skill": "Top Lane Skill Shot (upper-right lanes), Penguin Skill Shot (Penguin scoop), Super Skill Shot (any major flashing shot)",
+    "modes": "Major Villains (Catwoman, Joker, Penguin, Riddler), Minor Villains (Mad Hatter, King Tut, Bookworm, Egghead, Mr. Freeze, Shame), Villain Multiball, Bat Turn",
+    "multi": "Playfield Multiplier (Atomic Pile shot), Shot Multipliers (Commissioner Gordon target), Main Channel Multiplier",
+    "mult": "Villain Multiball (right orbit)",
+    "strat": "Complete major villain requirements to light Bat-Phone hurry-up at the Bat-Phone, cash in or keep going for super jackpots, complete TV targets to start minor villain modes for game-long perks, use Gadgets via the action button to spot mode shots.",
+    "watch": "Penguin scoop (mid-right), Bat-Phone (mid-right), Turntable targets (mid-left/mid-right), Right orbit (upper-right), Left orbit (upper-left), Commissioner Gordon target (upper-right), GADGET standup target bank (mid-left), TV standup targets (mid-right), Atomic Pile shot (upper-middle)",
+    "_src": "https://pinballrulesheets.com/stern/batman-66-rulesheet"
+  },
+  {
+    "name": "Game of Thrones (Stern)",
+    "code": "v1.37 \u2014 steep castle ramps and ruthless multiball pacing",
+    "skill": "Hard plunge into the lit lane to collect the skill shot award of (500k x Ball #) and 1 bonus X (Pro) / hard plunge feeding the upper playfield (Premium/LE)",
+    "modes": "Stark, Baratheon, Lannister, Greyjoy, Tyrell, Martell, Targaryen",
+    "multi": "Playfield Multipliers & Combo X",
+    "mult": "Blackwater Multiball, Wall Multiball, Winter Has Come, Hand of the King, Iron Throne",
+    "strat": "Stack House Modes with Blackwater Multiball by utilizing the left ramp, and manage your gold carefully at the Mystery screen to purchase powerful house action abilities.",
+    "watch": "Left Drop Target 3-Bank (mid-left), Left Loop (upper-left), Dragon / Castle Black (center-left), Left Ramp (center), Right Ramp (mid-right), Right Loop (upper-right), Right Target 2-Bank (mid-right)",
+    "_src": "https://pinballrulesheets.com/stern/game-of-thrones-pinball-rulesheet"
+  },
+  {
+    "name": "KISS (Stern)",
+    "code": "v1.40.0 - Band-themed pinball with a grid-filling bonus and dual target banks.",
+    "skill": "Plunge softly to delay the left loop switch or trigger the right loop switch to pick up loop awards.",
+    "modes": "Deuce, Hotter Than Hell, Lick It Up, Shout It Out Loud, Detroit Rock City, Rock & Roll All Night, Love It Loud, Black Diamond",
+    "multi": "Demon Multiball, Love Gun Multiball, KISS Army Wizard Mode, Rock City Wizard Mode",
+    "mult": "2x/3x/5x/10x Playfield Multiplier from completed songs; Combo and Shot Multipliers up to 52x max.",
+    "strat": "Complete KISS and ARMY target banks to build the bonus grid, light Backstage Pass, and advance toward Heaven's on Fire. Collect instruments via the right ramp to light band member wizard modes.",
+    "watch": "Gene spitting the ball SDTM from the Demon VUK, and false ball-save lights during multiballs.",
+    "_src": "https://pinballrulesheets.com/stern/kiss-wiki-rulesheet"
+  },
+  {
+    "name": "WWE WrestleMania Stern",
+    "code": "v1.33 + Ring shots act as loops when no match is active (upper-left/upper-right)",
+    "skill": "Plunge for early rollovers and ring entry (upper-middle)",
+    "modes": "Match (in the ring), Referee Multiball (purple REF shots), Tag-Team Multiball (left scoop/ramp)",
+    "multi": "Referee Multiball, Tag-Team Multiball",
+    "mult": "Complete 5 rollover lanes (top lanes)",
+    "strat": "Spell WWE to light modes, complete back targets in the ring during matches and hit the saucer after signature callouts for higher pin values (up to 6M), complete Tag-Team standups then shoot left scoop and ramp to start Tag-Team Multiball",
+    "watch": "Rubber degradation on the physical ring toy and increasing shot requirements for starting subsequent matches",
+    "_src": "http://tiltforums.com/t/wrestlemania-wiki-rulesheet/189"
+  },
+  {
+    "name": "Mustang (Stern 2024)",
+    "code": "v0.85 (gear targets and N2O boost lights flashing back and forth)",
+    "skill": "Hold left flipper before launch; hit A target (mid-right) when lit to advance 2 gears, or shoot scoop (mid-right) for 2M.",
+    "modes": "Cruisin' / Road Coarse / Police Pursuit / Stunt Driver / Drag Race / Rally Race",
+    "multi": "Gear Shift Multiball, Burnout Multiball, Mustang Multiball, Upgrade Multiball",
+    "mult": "Shots in order during Cruisin' double each hit; N2O boost for double scoring; Double Jackpots in Mustang Multiball",
+    "strat": "Complete all 6 modes to prepare Drift and Silverball Stampede at the scoop; utilize RPM targets (right) for high-value hits.",
+    "watch": "RPM timer fading from full to partial; drop target timers in Gear Shift Multiball.",
+    "_src": "https://pinballrulesheets.com/stern/mustang-wiki-rulesheet"
+  },
+  {
+    "name": "Metallica Stern",
+    "code": "1.80 + 4 main feature shots and captive ball on playfield",
+    "skill": "Plunge for flashing rollover (mid-right) or hold left flipper for super skill shot at major shots",
+    "modes": "For Whom the Bell Tolls, Fade to Black, Battery, Enter Sandman",
+    "multi": "Electric Chair Multiball, Grave Marker Multiball, Snake Multiball, Casket Multiball",
+    "mult": "2x Playfield via Dead End Target or Snake add-a-ball",
+    "strat": "Collect 12 of each item (Electric Chairs, Grave Markers, Snakes, Coffins) to light Crank It Up at the scoop (mid-right). Stack side modes like FUEL, Lady Justice, Seek & Destroy, and Blackened during multiballs or Crank It Up.",
+    "watch": "Keep ball alive during long Crank It Up modes and manage ball saves; watch drop targets (mid-left) and captive ball (mid-right).",
+    "_src": "https://pinballrulesheets.com/stern/metallica-rulesheet"
+  },
+  {
+    "name": "Star Trek (Stern 2013)",
+    "code": "v1.62 - Feature-rich deep ruleset with tiered modes, multi-ball integration, and Starfleet progression.",
+    "skill": "Plunge cleanly and control the ball for early mode starts or target completions.",
+    "modes": "Prime Directive, Space Jump, Save the Enterprise, Nero, Destroy the Drill, Klingon Battle",
+    "multi": "Klingon Multiball, Vengeance Multiball",
+    "mult": "Yes (Warp 9.1 / Warp 9.9 awards)",
+    "strat": "Stack modes with multiballs by holding off starting multiballs until just after activating a mode. Use the Away Team shot (under the upper flipper) to trigger Galactic Away Team modes for enhanced scoring.",
+    "watch": "Managing mode timers and avoiding drains during crucial final shot sequences or Galactic Away Team runs.",
+    "_src": "https://pinballrulesheets.com/stern/star-trek-wiki"
+  },
+  {
+    "name": "X-Men (Stern 2012)",
+    "code": "v1.51 - Blackbird scoop with pop-up targets blocking ramps",
+    "skill": "Plunge without hitting the Phoenix switch, or hit Storm/Rogue (upper flipper) or Xavier (Super Skill Shot).",
+    "modes": [
+      "Wolverine/Weapon X",
+      "Beast",
+      "Xavier/Professor X",
+      "Rogue",
+      "Storm",
+      "Cyclops",
+      "Iceman",
+      "Phoenix",
+      "Sabertooth",
+      "Shadow King",
+      "Hellfire Club",
+      "Juggernaut",
+      "Brotherhood of Mutants",
+      "Sentinels",
+      "Omega Red"
+    ],
+    "multi": "Magneto Multiball",
+    "mult": "4",
+    "strat": "Qualify Brotherhood and Hellfire targets without starting their multiballs to quickly relight villain modes at the Blackbird scoop.",
+    "watch": "Danger Room and Dark Phoenix",
+    "_src": "https://pinballrulesheets.com/stern/x-men-stern-2012"
+  },
+  {
+    "name": "Wheel of Fortune (Stern 2007)",
+    "code": "v5.0 / v6.02 tournament; non-standard outlane free-spin rollovers and rotating prize wheel",
+    "skill": "Plunge softly around the Toss-Up loop for 1M+ and a hurried scoop shot",
+    "modes": [
+      "Wheel Frenzy",
+      "Risky Spinning",
+      "Ramp Rampage",
+      "Combos",
+      "Keep it Spinning",
+      "Stop the Wheel",
+      "Contestant Hurry-Up"
+    ],
+    "multi": [
+      "Wheel of Fortune Multiball",
+      "Trip Multiball"
+    ],
+    "mult": "Left ramp (mid-left) and right ramp (mid-right) double the next shot; compound both for a 4x multiplier.",
+    "strat": "Spell BONUS via major shots to start timed Bonus Wheel modes at the scoop (center). Stack multiballs with modes and manage your flashing contestant to maximize prize bank values before solving puzzles.",
+    "watch": "V5.0 Trip Multiball jackpot values do not reset without a power cycle.",
+    "_src": "https://pinballrulesheets.com/stern/wheel-of-fortune-rulesheet-wip"
+  },
+  {
+    "name": "Spider-Man (Stern)",
+    "code": "v1.0 + Green Goblin figure shaking over left targets",
+    "skill": "Skill Shot: Plunge to flashing WEB lane (top). Super Skill Shot: Weak plunge to upper right flipper then side ramp (upper-right).",
+    "modes": [
+      "New Goblin",
+      "Daily Bugle",
+      "The Amazing Spider-Man",
+      "Bonesaw",
+      "Rescue MJ"
+    ],
+    "multi": [
+      "Black Suit Multiball",
+      "Fusion Malfunction",
+      "Bank Bust",
+      "Armed at the Dock",
+      "Battle Royale"
+    ],
+    "mult": "White arrows 2x/3x shot multiplier, completed timed modes boost multipliers up to 3x",
+    "strat": "Stack Doc Ock multiball with Black Suit multiball, utilize the light lock target safely, and complete sets of white arrows to light timed modes and multipliers.",
+    "watch": "Spider Sense lane (upper-right) potentially feeding the right outlane on unlevel machines",
+    "_src": "https://pinballrulesheets.com/stern/spider-man-rulesheet-wip"
+  },
+  {
+    "name": "World Poker Tour (Stern 2006)",
+    "code": "Rev: 14.0 - Collect hole cards and play Texas Hold 'em modes",
+    "skill": "Advance Hold 'em / Mystery / Skill Flip at Left Orbit (left)",
+    "modes": "Steal the Blinds, Play the Button, Know Your Outs, A Chip and a Chair, Spot the Tell, Change Gears",
+    "multi": "Ace in the Hole Multiball, All-In Multiball, No Limit Multiball, Poker Hands Multiball",
+    "mult": "Pop Targets add Bonus X; Triple Scoring inlanes",
+    "strat": "Get Ace in the Hole to 1 hit from start, start a Poker Corner mode, then shoot the mini-playfield jail to stack them.",
+    "watch": "Side Pots at Left Orbit (left) and Right Orbit (right); Cut the Cards at VUK (mid-left); Hurry Ups at White Stand Ups (upper-left)",
+    "_src": "https://pinballrulesheets.com/stern/world-poker-tour-rulesheet"
+  },
+  {
+    "name": "Sharkey's Shootout Stern",
+    "code": "v1.0 + classic pool-themed cabinet with green lock inserts",
+    "skill": "Center top lane (upper)",
+    "modes": "Bumper Pool (pop bumpers), Trick Shot (drop targets), Black Widow Hurry-Up (left orbit), 8 Ball / 9 Ball Games (drop targets), The Web Wizard Mode",
+    "multi": "Virtual Lock Multiball, Stampede Multiball, The Web 4-Ball Multiball",
+    "mult": "Bonus X (CUE lanes)",
+    "strat": "Play 9 Ball instead of 8 Ball because it is much faster and easier to win to reach Jeanette Lee and The Web wizard mode.",
+    "watch": "Drop targets, Right loop (far right) (upper-right)",
+    "_src": "https://pinballrulesheets.com/stern/creating-a-rulesheet-for-sharkeys-shootout"
+  },
+  {
+    "name": "Sonic The Hedgehog (Jersey Jack Pinball)",
+    "code": "Rev. 0.94 - Modern Sonic levels and Eggman boss battles",
+    "skill": "Action button zone selection; plunge to center ramp or left ramp to upper playfield (mid-upper) to hit Eggman for Lab Detour skill shot, or use right-side white/pink shots for super skill shots",
+    "modes": [
+      "Master Emerald Mission",
+      "Casino Night",
+      "Boss Rush",
+      "Super Sonic"
+    ],
+    "multi": [
+      "Chaos Emerald Multiball",
+      "Sonic Heroes Multiball"
+    ],
+    "mult": "2x starting jackpot multiplier, increased by +1x per hit to the held ball during Bash Dash",
+    "strat": "Complete zones (Green Hill, Chemical Plant, Rooftop Run, City Escape, Speed Highway, Sky Sanctuary, Seaside Hill) to reach the Goal Ring at center ramp (mid) or lab jump ramp (upper-center), defeat Eggman in Boss Battles, collect 7 Chaos Emeralds, and utilize Chaos Control via action button to freeze timers",
+    "watch": "Left standup target (mid-left) for Bash Dash, center ramp (mid) for Master Emerald and Boss Battles, right ramp (mid-right) for Spin Dash and Chaos Emerald locks",
+    "_src": "https://pinballrulesheets.com/jersey-jack/sonic-the-hedgehog"
+  },
+  {
+    "name": "Harry Potter (Jersey Jack Pinball 2025)",
+    "code": "v1.26 (Hourglass timer graphic on display)",
+    "skill": "Level 1: Left ramp (seeker), Hermione targets (lock), Death Eater (boost), HARRY lane (lock), RON targets (lock). Level 2: Center lane (Diagon Alley), Staircase / right ramp (2x explore Hogwarts), Right orbit (character value), Under flipper (extra ball), Scoop (wizard travel). Level 3: Center lane (+25M), Dumbledore's Army (big points), Center ramp (spot banners), Under flipper (extra credit mania), Scoop (tilt warning), Right spinner (spot horcrux).",
+    "modes": "School Year Lessons, Final Exam, Ollivander's Wand Shop, Flourish & Blotts, Owl Post, Weasley's Wizard Wheezes, Borgin & Burkes, Luna Loves Loops, Hexes & Jinxes, Loopin' Lupin, Heart's Desire, Quidditch Match",
+    "multi": [
+      "O.W.L.s Multiball",
+      "Explore Hogwarts Multiball",
+      "Golden Trio Multiball",
+      "Death Eater Multiball",
+      "Quidditch World Cup Multiball"
+    ],
+    "mult": "Geminio (2x, 3x, 4x Playfield X via Wizard Travel)",
+    "strat": "Complete 10 school year lessons then final exam to light O.W.L.s Multiball at center lane. Spell DIAGON at center lane (mid) to visit shops. Play four multiballs to qualify The Battle of Hogwarts. Collect all seven horcruxes (Diary, Ring, Locket, Cup, Diadem, Harry, Nagini) to light The Boy Who Lived wizard mode at the center lane (mid).",
+    "watch": "Fawkes (left outlane ball save via right orbit shots) and Protego (right outlane ball save via HARRY inlanes).",
+    "_src": "https://pinballrulesheets.com/jersey-jack/harry-potter-rulesheet"
+  },
+  {
+    "name": "Avatar: The Battle for Pandora (Jersey Jack Pinball, 2024)",
+    "code": "v5 (Visual clue: Pandora forests & floating mountains artwork)",
+    "skill": "Plunge to left outlane (mid-left), left inlane (mid-left), spider target (mid-right), scoop (lower-right), left orbit (upper-left), tulkun shot (upper-right), home tree VUK (upper-left), reverse scoop (upper-right), AMP suit slingshot center targets (center), or high camp (upper-right) to increase meuia and trigger super skill shots.",
+    "modes": "Spider (spider target), RDA (left ramp), Omatikaya (left orbit), Tree of Souls (upper-left ramp), Metkayina (mini-loop), Tulkun (tulkun ramp), Dive (raised scoop ramp), Rookery (right orbit)",
+    "multi": "Battle of the Hallelujah Mountains & Battle of Awa\u2019Atlu",
+    "mult": "Lock balls at left orbit (upper-left), upper loop (upper-right), or right orbit (upper-right) for A1; raise scoop ramp and defeat crab suit on lower playfield for A2. Shoot flashing red jackpots in sequence: Jake/Neytiri targets, reverse scoop, scoop, home tree VUK, spider target, RDA ramp for super jackpot.",
+    "strat": "Balance building event multipliers via inlane arrows and milking Sivako/Songcord modes while managing Meuia awards and spelling PANDORA for Eywa\u2019Eveng.",
+    "watch": "Keep track of active event multipliers (decreasing per flip), active Sivako modes, and milestone progress toward the Oel Ngati Kameie wizard mode.",
+    "_src": "https://pinballrulesheets.com/jersey-jack/avatar-the-battle-for-pandora-rulesheet"
+  },
+  {
+    "name": "Elton John (Jersey Jack)",
+    "code": "Rev: 2.03 - Eccentric musical career & milestone tracking",
+    "skill": "Plunge for sweep awards (top-to-bottom); short plunge to upper lane (backstage / side ramp) for Super Skill Shot; full plunge to drop targets for Rockabox album.",
+    "modes": "Song Selection, Wardrobe Items, Rocka-Box Frenzies, Encore Modes (Tiny Targets, Super Bennie and the Jets, Backstage Frenzy, Super Spinners, Piano-Matic), Super Stardom, Final Tour",
+    "multi": "True",
+    "mult": "Crocodile Rock Multiball (crocodile VUK), Rocket Man Multiball (rocket kicker), Signature Stage Multiball (side ramp / piano locks), Champ Multiball",
+    "strat": "Select a song at start; shoot flashing song shots to light wardrobe items at the Backstage shot (inner loop) for double scoring and victory laps; complete 9 stars to light piano locks for Signature Stage Multiballs; collect fuel for Rocket Man Multiball; hit tiny dancer target to light crocodile locks for Crocodile Rock Multiball; achieve 4 milestones to qualify Final Tour wizard mode.",
+    "watch": "Keep an eye on active song timers, wardrobe item stacks, fuel level for Rocket Man boosts, and multi-ball stack rules where Crocodile Rock and Rocket Man can run concurrently to double jackpots.",
+    "_src": "https://pinballrulesheets.com/jersey-jack/elton-john-rulesheet"
+  },
+  {
+    "name": "The Godfather (Stern 2023)",
+    "code": "v1.04 - Mafia empire building with action button weapon management",
+    "skill": "Soft plunge into the bumper (mid-right) or Compound (mid-left) for progress",
+    "modes": "Jobs, Dinner Specials (loop ramp), Take the Cannoli, Pursuit, Delivery (left ramp), Shakedown, Market Day, Hung Jury, Wedding Favor (VITO lanes), Tribute, Turnpike, Raid, Boxing, Baptism, Honor, Kiss the Ring",
+    "multi": [
+      "Compound Multiball",
+      "Sicily Multiball",
+      "Turf War Multiball",
+      "5 Families Multiball"
+    ],
+    "mult": "Up to 10x Playfield X via spinners (left orbit / right orbit) and action button, plus Shot X multipliers via right inlane target",
+    "strat": "Balance starting jobs via soldier collection with advancing influence (VITO lanes) and locking balls for multi-ball modes",
+    "watch": "Keep an eye on soldier timers during jobs and manage weapon usage with the action button for maximum playfield multipliers",
+    "_src": "https://pinballrulesheets.com/jersey-jack/the-godfather-rulesheet"
+  },
+  {
+    "name": "Toy Story 4 Stern",
+    "code": "v1.0 + carnival chaos visual style",
+    "skill": "Plunge into Woody saucer (mid-right) for skill shot, or upper loop (upper-right) for Super Skill Shot",
+    "modes": "Carnival Modes",
+    "multi": "Road Trip Multiball",
+    "mult": "3x",
+    "strat": "Complete all seven scenes and both character paths in Meet Me at the Carousel (scoop)",
+    "watch": "Take A Chance Wheel awards and Carnival game timers",
+    "_src": "https://pinballrulesheets.com/jersey-jack/toy-story-4-rulesheet"
+  },
+  {
+    "name": "Guns N' Roses (Jersey Jack Pinball)",
+    "code": "v1.20 - Revolver band inserts and spinning record centerpiece",
+    "skill": "Spell NOISE by making Skill Shots (mid-right/upper-right)",
+    "modes": "Thirst for Carnage (mid-right), Desert Demolition (mid-right), Tear Down the Wall (mid-right), Shall We Play a Game? (mid-right)",
+    "multi": "Make Some Noise (upper-right), Throw the Lights (left ramp), Ignite the Flames (spinning record), Turn it Up! (far left inlane), Tour Multiball (loops), Coma Multiball (left outlane / major shots)",
+    "mult": "Lock balls via left ramp (Pro) or lock shot (LE) to increase song starting value and ball save",
+    "strat": "Collect 7 band members (Axl top lanes, Slash record, Duff left ramp/VUK, Richard center spinner, Melissa teal keyboard, Dizzy purple keyboard, Frank jets/right ramp) to qualify songs, maintain Rock-It Meter without cradling to avoid crowd booing, and leverage patches for permanent scoring boosts",
+    "watch": "Rock-It Meter decay increases rapidly if you cradle the ball; if it reaches zero, the crowd boos you off stage and ends the song early",
+    "_src": "https://pinballrulesheets.com/jersey-jack/guns-n-roses-jjp-rulesheet"
+  },
+  {
+    "name": "Willy Wonka and the Chocolate Factory (Jersey Jack Pinball)",
+    "code": "v5.00 \u2014 Pure imagination factory adventure",
+    "skill": "Soft plunge to saucer (mid-right), upper flipper center ramp (mid-center), or Super Skill Shot holding left flipper and plunging to center ramp then saucer",
+    "modes": "Factory Tour Modes: Welcome to the Factory (right ramp), Inventing Room (center ramp), Fizzy Lifting Drink Room (left ramp), Golden Egg Room (green shots)",
+    "multi": "Gobstopper Multiball, Kid Multiball, Wonkavator Multiball",
+    "mult": "5x",
+    "strat": "Complete 5 Golden Tickets by progressing through Factory Tour modes, Multiballs, and achievements to reach wizard modes like Oompa-Loompa Odyssey and Pure Imagination",
+    "watch": "Watch out for drains during multiballs and manage your Factory Tour mode progression carefully",
+    "_src": "https://pinballrulesheets.com/jersey-jack/wonka-rulesheet"
+  },
+  {
+    "name": "Pirates of the Caribbean (Jersey Jack Pinball 2018)",
+    "code": "v0.99+ - immersive code with 6 multiballs and 5 movie mini-wizard modes",
+    "skill": "Plunge into bumpers (1k + mystery), ship popper (5k + advance Black Pearl), or upper flipper for Captain's Quarters (2.5k + Map spin)",
+    "modes": "Curse of the Black Pearl (Port Royal), Dead Man's Chest (The Chest), At World's End (Maelstrom/Whirlpool), On Stranger Tides (Fountain of Youth), Dead Men Tell No Tales (Devil's Triangle)",
+    "multi": "Curse of the Black Pearl, Dead Man's Chest, At World's End, On Stranger Tides, Dead Men Tell No Tales, Tortuga Multiball",
+    "mult": "6x Bonus Multiplier via Advance X targets on Black Pearl Ship; Super X and Shot X via PIRATE inlanes",
+    "strat": "Collect Gold via action button to light Tortuga Multiball; balance Chapter completions and character selection to maximize wizard mode scoring levels",
+    "watch": "Star Map (mid-playfield), The Depths (far left), Black Pearl Ship upper playfield",
+    "_src": "https://pinballrulesheets.com/jersey-jack/pirates-of-the-caribbean-jjp-rulesheet-wip"
+  },
+  {
+    "name": "Dialed In! (Jersey Jack Pinball)",
+    "code": "v5 (Phone scoop active)",
+    "skill": "Shoot ball just behind theater (upper-middle) into shooter lane switch; shoot side ramp (mid-right) or scoop (lower-right) for Super/Super Duper Skill Shots",
+    "modes": "Alien Invasion (left orbit to all arrows), Eruption (theater to right ramp), Tidal Wave (side ramp), Whirl Wind (left ramp to right ramp to left orbit to side ramp), EMP Strike (theater), Flash Fires (left ramp to BOB standups), Sinkholes (loops to theater), Meteor Storm (standups), Earth Shaker (leftmost adjacent shots), Acid Rain (jet bumpers to left ramp), Singularity (left orbit, left ramp, theater, right ramp)",
+    "multi": "Under Attack Multiball, Quantum Theater Multiball, Drones Gone Wild Multiball, High Voltage Multiball, Quick Monkey Wrench Multiball",
+    "mult": "Crazy Bob's Bonus Multiplier, SIM Card Scoring Multiplier",
+    "strat": "Complete B-O-B targets (mid-left) to light Crazy Bob's; qualify and stack Disaster Modes via QED target (upper-right) and phone scoop (lower-right); collect SIM cards at side scoop; build up Kilowatts, Spiders, Drones, and Transits for Quantum Theater Multiball",
+    "watch": "Betty's wrench raising and lowering on the left ramp during Quick Monkey Wrench Multiball; incoming electronic attacks during Under Attack Multiball SJP that can stutter flippers",
+    "_src": "https://pinballrulesheets.com/jersey-jack/dialed-in-rulesheet-wiki"
+  },
+  {
+    "name": "The Hobbit (Jersey Jack Pinball)",
+    "code": "1.0 / Wide-body layout featuring 31 modes, 2 multiballs, and extensive dwarf-collection mechanics.",
+    "skill": "Dwarf Skill Shot (upper-left DWARF targets), Elf Skill Shot (lower-left ELF targets), Lock Skill Shot (center LOCK rollovers), Inlane Skill Shot (inlanes).",
+    "modes": "Gandalf, Bilbo Baggins, Radagast, Elf, Dwarf, Man, Arkenstone Modes",
+    "multi": "Smaug Multiball, Beast Frenzy Multiball, Feast Frenzy",
+    "mult": "3.5",
+    "strat": "Balance qualifying modes via ramps and target banks while stacking Smaug Multiball and Beast Frenzy Multiball. Utilize the Ring button to postpone locks or modes and manage the kickback during mode starts.",
+    "watch": "Left Ramp (mid-left), Right Ramp (mid-right), Left VUK (mid-left), Right VUK (mid-right), ELF Drop Targets (lower-left), DWARF Drop Targets (upper-left), MAN Drop Targets (lower-right), Captive Ball (center), Mystery Target (right), Left/Right Spinners (outer left/right)",
+    "_src": "https://pinballrulesheets.com/jersey-jack/hobbit-pinball-rulesheet"
+  },
+  {
+    "name": "Barry O\u2019s BBQ Challenge (American Pinball)",
+    "code": "v1.0 - Cook up recipes against the Stars of BBQ across multiple modes",
+    "skill": "Plunge to hit BBQ Targets (stand-up targets), Left Saucer, Left Ramp (upper-left), Right Orbit (upper-right), Right Ramp (upper-right), Upper Right Saucer, Lower Right Saucer, Left Inlane, or Left Outlane",
+    "modes": "Cook-Offs, FIRE Hurry-Up (blue orbit), Hot Rod Challenges (orbits/ramps), Combomania",
+    "multi": "Meat Coma Multiball, Pitmaster Multiball, Side Dish Multiball, Firework Frenzy",
+    "mult": "Playfield Multiplier (right ramp, up to 4x), Bonus X (up to 21x), Recipe Multipliers",
+    "strat": "Complete three cook-offs to start Meat Coma Multiball, build recipe values via switch hits and ramps before cashing out at any open saucer, and manage drop targets for Side Dishes and multiball progression",
+    "watch": "Recipe values and challenge value increases reset when you drain",
+    "_src": "https://pinballrulesheets.com/american-pinball/barry-os-bbq-challenge-rulesheet"
+  },
+  {
+    "name": "Galactic Tank Force (American Pinball 2023)",
+    "code": "v1.0 (Campy 50s sci-fi aesthetic with ice cream and tanks)",
+    "skill": "Plunge into the flashing LAB rollover lane (upper-left) or advance rank rollover lane (upper-left)",
+    "modes": "Sprinkle Desert (spinner), Drilling for Fudge (Plotnik's lab), Buckets O'Berries (left ramp), Where's Walnuts? (green shots), Udder Madness (right saucer)",
+    "multi": "Air Strike Multiball, Meltdown, Cow-A-Bongo",
+    "mult": "2x and 4x Playfield X (hidden bumper banks), 2x Shot Multipliers (four major shots)",
+    "strat": "Destroy all 5 tanks via center target bank (mid) to reach Tank Zulu, and complete all 5 missions to create the Ice Cream Sundae",
+    "watch": "Atomic shield between the flippers (bottom-center) and straight-down-the-middle drains off the center targets",
+    "_src": "https://pinballrulesheets.com/american-pinball/galactic-tank-force-rulesheet"
+  },
+  {
+    "name": "Legends of Valhalla (American Pinball)",
+    "code": "v22.07.22 - Norse Viking mythology theme with animated Kraken and Thor's Hammer playfield features",
+    "skill": "Plunge shooter lane (top lanes)",
+    "modes": "Viking Legends, War on Land, War at Sea, Viking MB, Viking Raid, Rage, War of the Clans, Rampage, Escape the Kraken, Valhalla, Ragnarok",
+    "multi": "War at Sea (mid-ship), Viking MB (mid-ship), Rage (6-ball frenzy), Grendel (4-ball), Draugar (2-ball), Gwyllgi (2-ball), Tyr (2-ball), Ragnarok (6-ball)",
+    "mult": "Up to 3X (Asgard Combo)",
+    "strat": "Complete 8 tasks (Weapons, Army, Combos, War on Land, War at Sea, God of Thunder, Legend Destroyer, Conquest) to qualify Valhalla. Play all 16 legend battles to qualify Ragnarok.",
+    "watch": "Kraken magnet grab, Thor's hammer back panel drop, Berzerker drop target",
+    "_src": "https://pinballrulesheets.com/american-pinball/legends-of-valhalla-rulesheet"
+  },
+  {
+    "name": "Hot Wheels (American Pinball)",
+    "code": "v5 Quick-Look Rulesheet - center car toy spin & tach gauges",
+    "skill": "Soft plunge over 1, 2, 3 rollovers; hold left flipper to rev tach (don't blow engine); shoot lit left orbit for super skill shot",
+    "modes": [
+      "Gorilla Battle (blue)",
+      "T-Rex Battle (red)",
+      "Cobra Battle (green)",
+      "Triceratops Battle (yellow)",
+      "Draven Battle",
+      "Victory Lap Multiball",
+      "Loop Crash Multiball",
+      "Track Builder Unlimited Multiball",
+      "Car Chaos Multiball",
+      "Red Line Mania",
+      "Cars Epic",
+      "Loops Epic",
+      "Pops Epic",
+      "Ramps Epic",
+      "Ultimate Epic",
+      "Legend Multiball"
+    ],
+    "multi": "Yes",
+    "mult": "4-ball Victory Lap, 3-ball Loop Crash, 3-ball Track Builder, Car Chaos, Red Line Mania (4-ball auto), Legend (6-ball)",
+    "strat": "Maintain high tach value/gears for multipliers, collect cars for Collector Case Awards and Car Chaos, and stack Multiballs with active Battle and Epic modes.",
+    "watch": "Lower pop area exits can drain SDTM without nudging; draining ends Red Line Mania, Epic, Battle, and Treasure Hunt modes.",
+    "_src": "https://pinballrulesheets.com/american-pinball/hot-wheels-rulesheet-wip"
+  },
+  {
+    "name": "Oktoberfest: Pinball on Tap (American Pinball 2018)",
+    "code": "v1.0+ Beer stein mechanics and hidden magnets",
+    "modes": "Tent Modes (Ring Toss, Stein Race, Chugging, Looper, Juggler, Target Shooting, Duck Hunt, Rockin Express, Rotor, F\u00fcd Frenzy, Bumper Cars, Sky Slide, Tap-It!), Food Stand Modes (Pretzels, Cake, Ice Cream, Sausage, Food Coma)",
+    "multi": "Beer Barrel Multiball, Corkscrew Multiball, Juggler, Duck Derby",
+    "mult": "Playfield multiplier via TAP rollovers, Stein score multipliers",
+    "strat": "Collect diverse beer steins to boost specific Tent Mode scoring, manage MagNabs for strategic ball control, and balance duck collection for Duck Derby and bonus multipliers.",
+    "watch": "Left and right outlanes (watch for Last Call and Re-Entry ball saves), shared lock states in Beer Barrel Multiball.",
+    "_src": "https://pinballrulesheets.com/american-pinball/oktoberfest-pinball-on-tap-rulesheet"
+  },
+  {
+    "name": "Houdini (American Pinball)",
+    "code": "18.12.12 + A legendary escape artist theme featuring a physical stage curtain and a motorized trunk.",
+    "skill": "Plunge to hit one of three roving ESC targets or perform a soft plunge to the left Magic target for all awards.",
+    "modes": "Vanishing Elephant (stage, mid-right), Chinese Water Torture (stage, mid-right), Indian Needle Trick (stage, mid-right), Walk through Walls (stage, mid-right), Handcuff King (stage, mid-right), Milkcan Escape (stage, mid-right), Metamorphosis (stage, mid-right), Bullet Catch (stage, mid-right), Straight Jacket Escape (stage, mid-right), King of Cards (stage, mid-right), Haldane of the Secret Service (movie), Grim Game (movie), Man From Beyond (movie), Terror Island (movie), Master of Mystery (movie), Paris Jail Escape (mid-right), London Jail Escape (mid-right), New York Jail Escape (mid-right), Sydney Jail Escape (mid-right), Chicago Jail Escape (mid-right)",
+    "multi": "Trunk Multiball, Seance Multiball, Straight Jacket Multiball, Bullet Catch",
+    "mult": "Milkcan Multiplier (up to 4X via milkcan loop to ramp)",
+    "strat": "Stack stage or movie modes with multiballs like Trunk or Seance, utilize Milkcan Multipliers before starting high-value modes, and manage magic targets to advance modes and light outlane saves.",
+    "watch": "Movie Binge, Great Jail Escape, Ultimate Secret Mission, Master Magician",
+    "_src": "https://pinballrulesheets.com/american-pinball/houdini-rulesheet"
+  },
+  {
+    "name": "Beetlejuice (Spooky Pinball 2026)",
+    "code": "v1.0 (Undead fly icon glowing on screen)",
+    "skill": "Standard Skill Shot: time launch to hit right flipper; Super Skill Shot: quickly shoot Left Ramp (mid-left), Right Ramp (mid-right), and Spinner (center).",
+    "modes": "As Seen on TV, Grave Dig, Day-O Dinner Party, Head Shrink, Charades, Beetle Snake, 'Til Death, Otho\u2019s Seance, Scare the Deetz, Ghosts in the Sheets",
+    "multi": "Afterlife Couch / Now Serving Multiball, Strange and Unusual Multiball, It\u2019s Showtime Multiball, Singing in the Stairwell, Sandworm Multiball",
+    "mult": "Return Lost Souls via lit shot + Center Scoop (upper-left) to build up to 5x Playfield Multiplier",
+    "strat": "Use the Action Button for Magna-Save, locking shot values, lowering the Sandworm, stopping the Spin the Wheel award, and collecting Super Jackpots.",
+    "watch": "Beware draining down the outlanes, and watch out for the machine taking control of the flippers during Day-O Dinner Party.",
+    "_src": "https://pinballrulesheets.com/spooky/beetlejuice-rulesheet"
+  },
+  {
+    "name": "Evil Dead (Spooky Pinball)",
+    "code": "v1.0 + Cellar targets glowing red in the dark",
+    "skill": "Plunge to GROOVY targets (mid-upper) or hold left flipper for Super Skill Shot",
+    "modes": "Evil Awakens, Hacked to Bits, It Won\u2019t Let Us Leave, Undying Love, Hello Lover, Give me back my hand, Chased by Evil, Evil Ash, Deadites",
+    "multi": "Boom stick multiball, Cabin multiball, Undying Love Multiball, Deadite Frenzy Multiball",
+    "mult": "Blood flood multiplier via pop bumper targets (upper)",
+    "strat": "Choose Movie 1 or Movie 2 at start; stack Deadites or Give me back my hand with multiballs; toggle Good/Bad Linda at the right scoop for scoring tradeoffs",
+    "watch": "Cellar (center), GROOVY targets (mid-left), Ramps (left and right), Trap door (mid-right)",
+    "_src": "https://pinballrulesheets.com/spooky/evil-dead-by-spooky-pinball-rulesheet"
+  },
+  {
+    "name": "Looney Tunes (Spooky Pinball 2024)",
+    "code": "2025.03.01 - Strobing lost filmreel arrows guide the factory floor",
+    "skill": "Time auto-plunge to hit strobing ACME Vault targets (center drop target) / Super Skill Shot: Press action button before launch, shoot upper left loop (upper-left) immediately after",
+    "modes": "Episodes (Hare-Raising Hare, Baseball Bugs, Rabbit Transit, Rabbit Punch, Scaredy Cat, Long-Haired Hare, Rabbit of Seville, Rabbit Fire, Ain\u2019t She Tweet, Bully For Bugs, Satan\u2019s Waitin, What\u2019s Opera Doc, Robin Hood Daffy, Hyde and Go Tweet)",
+    "multi": "TNT Add-A-Ball, Anvil Frenzy, Giant Rocket Multiball, Rocket Skates Multiball",
+    "mult": "6x",
+    "strat": "Complete episodes to light extra balls and specials, build Roadrunner loops up to 350 MPH for multipliers and bonus boosts, collect combo jackpots to unlock Rabbit Punch, and stack playfield X via the hidden lane behind the upper left flipper",
+    "watch": "Watch out for outlane drains and use Carrot targets to light the Hare Restore outlane ball save",
+    "_src": "https://pinballrulesheets.com/spooky/looney-tunes-rulesheet"
+  },
+  {
+    "name": "Scooby Doo, Where Are You? (Spooky Pinball)",
+    "code": "2024.01.06 - Mystery-solving van themed action with upper playfield and multiple monster modes",
+    "skill": "Plunger skill shot via flashing red light: left drop targets (spawns snacks), character orbits (qualifies modes), or standup targets (raises center drop target)",
+    "modes": "Charlie the Robot (center ramp), Captain Cutler (upper playfield), Miner 49'er (inner orbits/spinners), Space Kook (spinners/airport), The Creeper (character orbits), Black Knight (upper right rubber), Swamp Witch / Zombie (left/right split playfield), Run Daphne Run (purple shots), Fred's Plan (strobe fingerprint shots)",
+    "multi": "Mystery Machine Multiball, Captain Cutler Multiball, Scooby Snack Multiball",
+    "mult": "Bravery Meter multipliers during cases, trap shot multipliers, super jackpots in multiball",
+    "strat": "Choose character perk wisely at start (Daphne adds ball save time, Fred gives virtual lock, Scooby lights outlanes, Shaggy adds trap door saves, Velma reduces clues needed). Collect Scooby Snacks to restore bravery.",
+    "watch": "Center ramp (mid-center), Mystery Machine (mid-right), Left Drop Target Bank (mid-left), Character Orbits (upper-left/upper-right), Upper Playfield Captain Cutler Shots (upper-left)",
+    "_src": "https://pinballrulesheets.com/spooky/scooby-doo-where-are-you-rulesheet"
+  },
+  {
+    "name": "Halloween (Spooky Pinball 2021)",
+    "code": "v5 - Myers chases Laurie across suburban town scenes.",
+    "skill": "Plunge or use flippers to light skill shots; shoot middle drop target or plunge into Judith Tombstone (upper-right) for a secret skill shot.",
+    "modes": "Death in the Driver's Seat, Bob and Lynda\u2019s Demise, Counting Bodies, Escape the Kitchen, Let Me In, Laurie Slashes Back, Stalker, First Kill, Jack-O-Lantern Multiball",
+    "multi": "Hedge Multiball, Sanitarium Multiball, House Multiball",
+    "mult": "250k jackpots, super jackpots, and add-a-balls across multiballs",
+    "strat": "Win Jack-O-Lantern modes, collect blood for the store (1M points, 2x scoring, extra ball), and manage fuel timers during wizard modes.",
+    "watch": "Boogeyman, The Night He Came Home",
+    "_src": "https://pinballrulesheets.com/spooky/halloween-rulesheet"
+  },
+  {
+    "name": "Ultraman: Kaiju Rumble (Spooky Pinball 2021)",
+    "code": "v1.0 + lifter mechanisms in inlanes returning balls from subway",
+    "skill": "Select skill shot with flipper buttons (middle drop target most valuable); Secret Skill Shot on standup behind Science Patrol drop target (far-right)",
+    "modes": "Ragon (left orbit/ramps/right orbit), Gamora (purple shots, middle playfield), Red King (green vs red shots), Zarab (standup targets), Zumbolar (drop targets and orbits), Pester (roaming pink shot), Dada (expert jackpots), Neronga (expert power system defense)",
+    "multi": "Baltan Multiball, Bemular Multiball, Jirahs Multiball",
+    "mult": "Jackpots at ramps/orbits/standups, Super Jackpots at scoops and crossover ramps",
+    "strat": "Complete center drop targets (center) to light Quick Battles at Beta Capsule scoop (mid-right); collect Spacium after battles to cash in for major awards",
+    "watch": "Zetton Wizard Mode, Ultra Brothers Wizard Mode",
+    "_src": "https://pinballrulesheets.com/spooky/ultraman-wiki-rulesheet"
+  },
+  {
+    "name": "Rick and Morty (Spooky Pinball)",
+    "code": "v5.0 - Portal gun graphic and flashing ramp indicators",
+    "skill": "Plunge directly to the upper flipper for the skill shot; Noob Noob target (mid-right) awards 200k, Garage (left-upper) awards 400k.",
+    "modes": "Morty Adventure Card",
+    "multi": "Gromflomite Battle Multiball",
+    "mult": "2",
+    "strat": "Start adventures to utilize the 10-second ball saver, which freezes after a lock until the ball returns to the playfield.",
+    "watch": "Keep an eye on the anti-gravity battery for the Magna-Save located under the A in SLAM (left outlane/inlane area).",
+    "_src": "https://pinballrulesheets.com/spooky/rick-morty-rulesheet"
+  },
+  {
+    "name": "Alice Cooper\u2019s Nightmare Castle (Spooky Pinball)",
+    "code": "v1.1.0.1 \u2014 Traverse the grid of castle rooms, battle classic horror monsters, and collect items before facing the ultimate billionaire wizard mode.",
+    "skill": "Launch the ball and attempt to shoot the ramps, orbits, or crypt lock to light the secret passage and the outlane ball save (mid-right/upper-left).",
+    "modes": "Monster Battles (Alice, Wolf, Vampire, Zombie, Insect, Pit Creature, Igor, Ethyl), Frank MB, Crypt MB, Billion Dollar Baby",
+    "multi": "Crypt Multiball, Frank Multiball",
+    "mult": "Bonus multiplier via lower right target above the right inlane/outlane",
+    "strat": "Navigate the room grid using the left/right orbits to reach monster battles. Collect items in specific rooms with matching monsters to ease battles. Build mystery via the middle scoop (left of 3 center targets) for quick monster progress.",
+    "watch": "Mag-Neat-O save via the 4 bottom lanes activating purple outlanes for 45 seconds (inactive during multiball).",
+    "_src": "https://pinballrulesheets.com/spooky/alice-cooper-nightmare-castle-rulesheet"
+  },
+  {
+    "name": "Total Nuclear Annihilation (Spooky Pinball)",
+    "code": "v1.0 - CRT-style numeric displays and intense synth soundtrack",
+    "modes": "Destroy 9 Reactors",
+    "multi": "3-Ball Multiball",
+    "mult": "Up to 4x",
+    "strat": "Complete the keypad grid to qualify reactors, overheat them using the upper reactor area, and destroy them by hitting lit targets.",
+    "watch": "Watch out for how quick the scoop fires the ball back!",
+    "_src": "https://pinballrulesheets.com/spooky/total-nuclear-annihilation-rulesheet"
+  },
+  {
+    "name": "The Princess Bride (Multimorphic 2024)",
+    "code": "1.1.4.1 - Feature-rich pinball adaptation of the classic film with distinct regional modes",
+    "modes": "Castle, Florin, and Guilder Story Modes plus True Love and Prepare to Die Multiballs",
+    "multi": "True Love Multiball, Prepare to Die Multiball, and As You Wish Multiball",
+    "mult": "Bonus Multiplier",
+    "strat": "Stack multiballs with eligible modes, maintain narrative streaks for bonus scoring, and utilize As You Wish for Guilder battles",
+    "watch": "Keep an eye on the Book on the playfield screen and Tilt Warnings Remaining near the left outlane apron",
+    "_src": "https://pinballrulesheets.com/multimorphic/the-princess-bride-rulesheet"
+  },
+  {
+    "name": "Final Resistance (Stern)",
+    "code": "v5 - Battles and Multiballs (Visual clue: Shield mechanism blocking the right ramp)",
+    "skill": "Left Ramp (mid-left) [Super Skill: Combo the Right Ramp (upper-right)] or Spinner (center) [Super Skill: Combo the Spinner again (center)]",
+    "modes": "Battles (Trapped, The Fuse, Ground War, Blast Shield, Power Down, Missile Wave, Swarm, Annihilation)",
+    "multi": "Ship Multiball and Lock and Load Multiball",
+    "mult": "Jackpot multiplier increases by hitting the jackpot saucer (right scoop) in succession",
+    "strat": "Complete 4 sets of ramps before starting a battle to gain the Pre-Emptive Strike advantage. Use Hacks to open the shield (mid-right) for access to Ship Multiball and modes.",
+    "watch": "Nuclear Blast powerup kills the user by turning off all solenoids until the ball drains.",
+    "_src": "https://pinballrulesheets.com/multimorphic/final-resistance-rulesheet-multimorphic-2023"
+  },
+  {
+    "name": "Weird Al\u2019s Museum of Natural Hilarity (Multimorphic)",
+    "code": "v1.0.2.1 - Weird Al acts as museum curator guiding players through songs and exhibits across five exhibit halls.",
+    "skill": "Plunge to Left Orbit (lower-left) and immediately shoot the Spiral Ramp (upper-left) for 250K.",
+    "modes": "Amish Paradise, White & Nerdy, Sports Song, Weasel Stomping Day, Word Crimes, I\u2019ll Sue Ya, Mission Statement, Traffic Jam, Germs, Like A Surgeon",
+    "multi": "Dare to be Stupid Multiball, Hardware Store Multiball, UHF Multiball, Mission Statement Multiball, Germs Multiball",
+    "mult": "Earn up to 17 shirts from pop bumpers (Gift Shop) to permanently increase your playfield multiplier by +0.1x per shirt.",
+    "strat": "Stack multiballs onto running exhibit hall modes for safety, and utilize the VIP Pass (via V-I-P targets and raised scoops) to pick the most advantageous modes.",
+    "watch": "Watch out for SDTM risks on fast returns from the Right Entrance (mid-right) and manage the auxiliary white buttons for independent upper flipper control.",
+    "_src": "https://pinballrulesheets.com/multimorphic/weird-als-museum-of-natural-hilarity-rulesheet"
+  },
+  {
+    "name": "Sorcerer\u2019s Apprentice (Multimorphic)",
+    "code": "v5.0 - spells, health, and multi-location wizard modes",
+    "skill": "Navigate locations (Workshop, Bazaar, Dunes, Oasis) via labeled shots",
+    "modes": "Workshop, Bazaar, Dunes, Oasis",
+    "multi": "Black Magic Multiball",
+    "mult": "2-ball multiball per spell learn mode",
+    "strat": "Switch spells using white buttons to match lit shots, manage health and shield, defeat the bandit, and unlock the dungeon via right ramp (upper-right)",
+    "watch": "Left loop (mid-left) for mode starts, captive ball (center) for timer extensions, and right ramp (upper-right) for Sorcerer battle",
+    "_src": "https://pinballrulesheets.com/multimorphic/sorcerers-apprentice-rulesheet"
+  },
+  {
+    "name": "Heist (Multimorphic)",
+    "code": "v1.0.1.3 - City heist crew recruitment and daring getaways",
+    "skill": "Shoot the side loop, left outer loop, or left ramp",
+    "modes": "Wheelman (left ramp), Cat Burglar (left ramp), Safecracker (right horseshoe / spinner), Hacker (right ramp), Demolition (left/right orbit)",
+    "multi": "Police Multiball, Crane Multiball, Jail Break Multiball, 15 Car Monte",
+    "mult": "Donut collection (6 for bonus X, 12 for police bribe)",
+    "strat": "Recruit all 5 crew members and Mastermind to qualify and beat the Big Final Heist",
+    "watch": "Police car interruptions that arrest crew members, and the jail/bail mechanic",
+    "_src": "https://pinballrulesheets.com/multimorphic/heist-rulesheet"
+  },
+  {
+    "name": "Alien (Pinball Brothers 2022)",
+    "code": "v5 (Darkness of space survival)",
+    "skill": "Plunge using launch button to right flipper; make skill shots like Vent 1 (upper-left) or Xenomorph Target (mid-right) for awards.",
+    "modes": "Derelict Ship, Acid Burn, Find Jonesy, Tunnel Hunt, Combat Drop, A-P-C, Bug Hunt, Queen's Nest",
+    "multi": "Hypersleep Multiball, Sentry Guns Multiball, Ambush Multiball, Save Newt Multiball",
+    "mult": "2x Scoring via DROP and SHIP at ramps (left ramp / right ramp), Weapon 4 (Pulse Rifle), or Mystery.",
+    "strat": "Complete missions and build bonus by destroying eggs in bumpers. Collect all 5 weapons (Handgun, Shotgun, Smart Gun, Pulse Rifle, Flamethrower) for extra balls and ball savers.",
+    "watch": "Self-Destruct, Loader Battle, All-Out War",
+    "_src": "https://pinballrulesheets.com/pinball-brothers/pinball-brothers-alien-rulesheet"
+  },
+  {
+    "name": "Robocop (Data East 1989)",
+    "code": "v5.0 | features ED209 portrait animation on dot matrix",
+    "skill": "Plunge for lane surrounded by two lit lane guides for 100K x ball in play, lane-changing for unlit insert lane",
+    "modes": "Multiball, ED209 Mode, Double Playfield, Everything is Lit",
+    "multi": true,
+    "mult": "Lock 3 balls via R ramp (right ramp) when suspect inserts are lit",
+    "strat": "Rip the spinner (mid-right) for points, avoid standup targets (mid) unless in multiball, and shoot R ramp (right ramp) for jackpots",
+    "watch": "Avoid hitting the post of death near the spinner (mid-right) which can cause DTM drains",
+    "_src": "https://pinballrulesheets.com/data-east/robocop-rulesheet"
+  },
+  {
+    "name": "Airborne (Capcom 1996)",
+    "code": "v1.0 (Complex ramp layout and international air show pilot theme)",
+    "skill": "Plunge to the top, use the Injector to select a jet entrance (left/right for points, pilot's seat to lock)",
+    "modes": "Night Flying (upper-left), Dogfight Mayhem (mid), Air Frenzy (mid), World Frenzy (mid)",
+    "multi": "Dogfight Mayhem (2-ball), Air Frenzy (3-ball), World Frenzy (4-ball)",
+    "mult": "Up to 10x via JET rollover lanes (upper)",
+    "strat": "Play for Air Frenzy for high scoring, use Night Flying to freeze timers on difficult stunts",
+    "watch": "Blue Angels formation center standup targets (mid) due to danger near the center drain",
+    "_src": "https://pinballrulesheets.com/capcom/airborne-rulesheet"
+  },
+  {
+    "name": "Shaq Attaq (Gottlieb)",
+    "code": "v5 (basketball player graphic on backglass)",
+    "skill": "Plunge a ball for \u201cAlley Oop\u201d when saving a mode start (plunger lane)",
+    "modes": "Multimode level 5 (Start all 4 regular modes and Multiball simultaneously), HORSE (spinner)",
+    "multi": "Regular Multiball",
+    "mult": "Relock all balls into the ramp (ramp)",
+    "strat": "Qualify all 4 modes and Multiball on the first two balls without starting them, then start them simultaneously along with Multiball. Focus on the Vari Target (vari target) for Game Balls, shoot the spinner (HORSE) (spinner) to restart mode timers, and aim for the Drop Target (drop targets) when reaching the top flippers. Accumulate at least 5 Game Balls via the 1-2-3-4-5 feature before the Finals, always say \"NO\" to trades to reach 14 Game Balls for \"Double Your Score\", and pursue the 5 hidden features.",
+    "watch": "Avoid starting modes early on balls 1 and 2 to stack them with Multiball; beware of the automatic Multiball on the last ball in tournament mode if regular Multiball hasn't been played yet.",
+    "_src": "https://pinballrulesheets.com/gottlieb/shaq-attaq-rules"
+  },
+  {
+    "name": "Pulp Fiction (Chicago Gaming Company / Raw Thrills)",
+    "code": "v1.0 (Vintage Quentin Tarantino cult classic theme inspired by 80s/90s pinball)",
+    "skill": "Plunge into the top saucer (upper) for 3k per lit arrow (100k for all 5); hold left flipper for Super Skill Shot",
+    "modes": "Briefcase Boogie (left kicker), Pawn Shop Panic (center drop targets/sinkhole), Roll Scene (right saucer), Cast Chaos (top saucer), Pulp Fiction Frenzy (pawn shop), Divine Intervention Wizard Mode",
+    "multi": "Briefcase Boogie, Pawn Shop Panic, Cast Chaos, Pulp Fiction Frenzy, The Shot, Divine Intervention",
+    "mult": "Up to 6x via Big Kahuna Bonus (bumpers/bullseye target)",
+    "strat": "Complete all 5 main objectives to light Divine Intervention wizard mode; stack Big Kahuna Playfield X with Scene collects and multiballs",
+    "watch": "Right drop target (mid-right) and top saucer (upper)",
+    "_src": "https://pinballrulesheets.com/chicago-gaming/pulp-fiction-rulesheet"
+  },
+  {
+    "name": "Winchester Mystery House (Barrels of Fun Pinball)",
+    "code": "2026.10.01 / Angled center drop bank and upper left key drops",
+    "skill": "Plunge the highlighted center drop target matching the flashing insert to collect skill shot awards",
+    "modes": [
+      "Twin Dining Rooms / Mirror Banquet (mid-right)",
+      "Kitchen / The Hungering Flame (front-facing scoop)",
+      "Venetian Dining Room / Flicker and Flame (upper blue shot)",
+      "Basement / Whispers in the Dark (rail lighting)",
+      "Seance Room / The Thirteenth Toll (lower-left seance room)",
+      "Daisy Bedroom / Lullaby of the Hollow Eyes (left ramp)",
+      "Daisy Bedroom / The Shattered Threshold (spinner)",
+      "Sarah\u2019s Bedroom / The Possession (inline drops)",
+      "Hall of Fires / Ashes in the Walls (left ramp)",
+      "South Conservatory / The Watching Glass (right ramp)",
+      "North Conservatory / What Lies Beneath (spinner targets)",
+      "Callroom / The Unfinished Request (annunciator)",
+      "Witch\u2019s Cap / Circle of Echoes (spinner)"
+    ],
+    "multi": [
+      "Seance Multiball",
+      "Wheelbarrow Ghost Multiball"
+    ],
+    "mult": "Playfield multiplier built by filling the spirit meter and starting multipliers",
+    "strat": "Unlock rooms using keys, build mode values during travel, manage angry spirits to avoid reckonings, and complete thirteen tasks to reach the wizard mode.",
+    "watch": "Keep an eye on the spirit meter, angry spirit count on the map, active room timers, and boiler pressure during wheelbarrow multiball.",
+    "_src": "https://pinballrulesheets.com/barrels-of-fun/winchester-mystery-house-rulesheet"
+  },
+  {
+    "name": "Dune (Stern 2025)",
+    "code": "v2026.03.30 - Day/Night cycle HAL lighting shifts orange and blue over Arrakis playfield",
+    "skill": "Plunge to Scoop (front) for water/spice and resources, Sneak (rear scoop), or Left Spinner; Secret Skill Shots include Tunnel and Left Outlane",
+    "modes": [
+      "Harvester Battle (center)",
+      "Train (prophecy)",
+      "Survive (prophecy)",
+      "Ride (prophecy)",
+      "Rescue (prophecy)",
+      "Fight (prophecy)",
+      "Awaken (prophecy)"
+    ],
+    "multi": [
+      "Desert Power",
+      "Fedaykin"
+    ],
+    "mult": "Deploy all thumpers via the action button for up to 4x scoring multipliers and worm distance jackpots",
+    "strat": "Balance day/night cycles to optimize water and spice generation, build up Desert Power multiball jackpots via the pit, and progress through Prophecy modes for permanent game perks",
+    "watch": "Keep an eye on water levels during Harvester Battles to avoid premature mode timeout and manage defense levels during Feyd Rautha's Arena Battle",
+    "_src": "https://pinballrulesheets.com/barrels-of-fun/dune-rulesheet"
+  },
+  {
+    "name": "Labyrinth (Barrels of Fun, 2023)",
+    "code": "v2024-09-25 - Worms, goblins, and musical numbers fill the playfield.",
+    "skill": "Plunge for Worm Skillshot (mid-left), Wiseman (lower-right scoop), Target (upper-right), Ramp (center), Bridge (upper-left loop), or Village (upper-back).",
+    "modes": "The Knockers (left ramp / right ramp), The Four Guards (upper loop / center ramp), The Fireys (captive ball trap), Bog of Eternal Stench (left ramp), The Oubliette (any lit shot), The Cleaners (left orbit spinner to right orbit).",
+    "multi": "Brick Keeper Multiball, Friend Multiball, Tea Time Multiball, Wise Man Multiball.",
+    "mult": "13 Orbs total across modes, multiballs, quests, and friends; stack up to 3 multiplier orbs on a single rainbow shot.",
+    "strat": "Complete all 6 modes to unlock Goblin City Multiball, level up Hoggle, Ludo, and Sir Didymus for massive rewards, and collect all 13 Orbs to reach the Battle Jareth ultimate wizard mode.",
+    "watch": "Watch the ticking clock hitting the 13th hour in The Cleaners mode and Battle Jareth, and watch out for stenched green shots in Bog of Eternal Stench.",
+    "_src": "https://pinballrulesheets.com/barrels-of-fun/labyrinth-rulesheet"
+  },
+  {
+    "name": "Merlin's Arcade (Turner Pinball)",
+    "code": "v5 | Roving circle light during plunge",
+    "skill": "Time plunge to align roving circle light with Lady of the Lake Mystery award (upper-left)",
+    "modes": "Knight Battles (various major shots), Duel Mini-Wizard Mode (center scoop)",
+    "multi": "Merlin Multiball, Knight Multiball",
+    "mult": "Shoot orange-lit jackpot shots (playfield) and Super Jackpot at lower-right target",
+    "strat": "Qualify multiple Knight Battles, get Merlin Multiball 1 shot away, shoot center scoop to launch battles, then shoot Left Ramp to stack Merlin Multiball",
+    "watch": "Grail Save outlane saver cycling via sling and pop bumper hits",
+    "_src": "https://pinballrulesheets.com/turner/merlins-arcade"
   }
 ];
-let games = [], editIdx = null;
-const show = id => ["vList","vDet","vForm","vKey","vExp","vImp"].forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
-const esc = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+let games = [], editIdx = null, viewMode = "az", activeLetter = "ALL";
+const show = id => ["vList","vAddMenu","vDet","vForm","vImp","vExp"].forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
+const esc = s => String(s || "N/A").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const saveDB = () => localStorage.setItem(DB, JSON.stringify(games));
-function init() { const s = localStorage.getItem(DB); games = s ? JSON.parse(s) : JSON.parse(JSON.stringify(STARTERS)); saveDB(); renderList(); }
+
+function getMfg(g) {
+  const src = (g._src || "").toLowerCase();
+  if (src.includes("/stern/")) return "Stern Pinball";
+  if (src.includes("/jersey-jack") || src.includes("/jjp/")) return "Jersey Jack Pinball";
+  if (src.includes("/spooky")) return "Spooky Pinball";
+  if (src.includes("/american")) return "American Pinball";
+  if (src.includes("/chicago-gaming")) return "Chicago Gaming";
+  if (src.includes("/barrels-of-fun")) return "Barrels of Fun";
+  if (src.includes("/multimorphic")) return "Multimorphic";
+  const m = g.name.match(/\(([^)]+)\)/);
+  return m ? m.pop() : "Other Manufacturers";
+}
+
+function init() {
+  const saved = JSON.parse(localStorage.getItem(DB) || "[]");
+  const seen = new Set(saved.map(g => (g._src || g.name).toLowerCase()));
+  games = [...saved, ...STARTERS.filter(g => !seen.has((g._src || g.name).toLowerCase()))];
+  saveDB(); renderList();
+}
+
+function setMode(m) {
+  viewMode = m; activeLetter = "ALL";
+  document.getElementById("tabAZ").className = m === "az" ? "btn" : "btn btn-sec";
+  document.getElementById("tabMfg").className = m === "mfg" ? "btn" : "btn btn-sec";
+  renderList();
+}
 
 function renderList() {
-  const q = document.getElementById("qIn").value.toLowerCase(), list = document.getElementById("list");
-  list.innerHTML = ""; document.getElementById("sub").textContent = `${games.length} Machines in Library`;
-  games.map((g, i) => ({...g, i})).filter(g => g.name.toLowerCase().includes(q)).sort((a,b) => a.name.localeCompare(b.name)).forEach(g => {
-    const d = document.createElement("div"); d.className = "card"; d.onclick = () => showDet(g.i);
-    d.innerHTML = `<div><b>${esc(g.name)}</b><div style="font-size:12px;color:var(--muted);">${esc(g.code.split("(")[0].trim())}</div></div><b style="color:var(--accent);">›</b>`;
-    list.appendChild(d);
-  });
+  const q = document.getElementById("qIn").value.toLowerCase();
+  const list = document.getElementById("list"), azBar = document.getElementById("azBar");
+  list.innerHTML = ""; azBar.innerHTML = "";
+  let filtered = games.map((g, i) => ({...g, i})).filter(g => g.name.toLowerCase().includes(q)).sort((a,b) => a.name.localeCompare(b.name));
+  document.getElementById("sub").textContent = `${games.length} Machines in Library`;
+
+  if (viewMode === "az") {
+    const letters = ["ALL", ...new Set(filtered.map(g => g.name.charAt(0).toUpperCase()).filter(c => /[A-Z0-9]/.test(c)))];
+    letters.forEach(L => {
+      const b = document.createElement("button"); b.className = "pill" + (activeLetter === L ? " active" : "");
+      b.textContent = L; b.onclick = () => { activeLetter = L; renderList(); }; azBar.appendChild(b);
+    });
+    if (activeLetter !== "ALL") filtered = filtered.filter(g => g.name.toUpperCase().startsWith(activeLetter));
+    filtered.forEach(g => list.appendChild(makeCard(g)));
+  } else {
+    const groups = {};
+    filtered.forEach(g => { const m = getMfg(g); (groups[m] = groups[m] || []).push(g); });
+    Object.keys(groups).sort().forEach(m => {
+      const h = document.createElement("div"); h.className = "grp-hdr"; h.textContent = `${m} (${groups[m].length})`; list.appendChild(h);
+      groups[m].forEach(g => list.appendChild(makeCard(g)));
+    });
+  }
+}
+
+function makeCard(g) {
+  const d = document.createElement("div"); d.className = "card"; d.onclick = () => showDet(g.i);
+  d.innerHTML = `<div><b>${esc(g.name)}</b><div style="font-size:12px;color:var(--muted);">${esc((g.code || "").split("(").shift().trim())}</div></div><b style="color:var(--accent);">›</b>`;
+  return d;
 }
 
 function showDet(i) {
   show("vDet"); const g = games[i];
   document.getElementById("detBox").innerHTML = `<h2 style="margin:0 0 12px;color:var(--gold);">${esc(g.name)}</h2>` +
-    [["Code & Clue","code"],["Skill Shot","skill"],["How to Start Modes","modes"],["Primary Multiball","multi"],["Playfield Multipliers","mult"],["Best Point Strategy","strat"],["Watch Out / Note","watch"]]
+    [["Code & Clue","code"],["Skill Shot","skill"],["How to Start Modes","modes"],["Primary Multiball","multi"],["Playfield Multipliers","mult"],["Best Point Strategy","strat"],["Watch Out / Hazards","watch"],["Misc / Personal Notes","misc"]]
     .map(([lbl, k]) => `<div class="fg"><div class="fl">${lbl}</div><div>${esc(g[k])}</div></div>`).join("");
   document.getElementById("editBtn").onclick = () => openForm(i);
   document.getElementById("delBtn").onclick = () => { if(confirm("Delete?")){ games.splice(i,1); saveDB(); show("vList"); renderList(); }};
@@ -171,68 +1244,27 @@ function showDet(i) {
 
 function openForm(i = null) {
   show("vForm"); editIdx = i;
-  ["name","code","skill","modes","multi","mult","strat","watch"].forEach(k => document.getElementById("f_"+k).value = i !== null ? games[i][k] : "");
+  ["name","code","skill","modes","multi","mult","strat","watch","misc"].forEach(k => document.getElementById("f_"+k).value = i !== null ? (games[i][k] || "") : "");
 }
 
 function saveForm() {
   const name = document.getElementById("f_name").value.trim(); if (!name) return alert("Enter Machine Name");
-  const obj = {}; ["name","code","skill","modes","multi","mult","strat","watch"].forEach(k => obj[k] = document.getElementById("f_"+k).value.trim() || "N/A");
+  const obj = {}; ["name","code","skill","modes","multi","mult","strat","watch","misc"].forEach(k => obj[k] = document.getElementById("f_"+k).value.trim() || "N/A");
   if (editIdx !== null) { games[editIdx] = obj; saveDB(); showDet(editIdx); } else { games.push(obj); saveDB(); showDet(games.length - 1); }
 }
 
-const openKey = () => { show("vKey"); document.getElementById("kIn").value = localStorage.getItem(KEY_DB) || ""; };
-const saveKey = () => { localStorage.setItem(KEY_DB, document.getElementById("kIn").value.trim()); alert("API Key Saved!"); show("vList"); };
-
-function openExp() {
-  show("vExp");
-  document.getElementById("expBox").value = games.map(g => JSON.stringify({
-    messages: [
-      { role: "system", content: "You are a tournament pinball caddy. Give concise v5 Quick-Look rules with physical shot locations." },
-      { role: "user", content: "Quick-Look for " + g.name },
-      { role: "assistant", content: Object.entries(g).map(([k,v]) => k + ": " + v).join("\n") }
-    ]
-  })).join("\n");
+function copyPdfPrompt() { const b = document.getElementById("pdfPromptBox"); b.select(); navigator.clipboard.writeText(b.value); alert("Prompt copied!"); }
+function importJsonCard() {
+  const raw = document.getElementById("jsonPasteBox").value.trim(); if (!raw) return alert("Paste the AI summary first!");
+  const getLine = tag => { const m = raw.match(new RegExp("(?:^|\\n)[\\s\\*\\-•]*" + tag + "[\\s\\*]*:[\\s\\*]*(.+)", "i")); return m ? m.pop().replace(/^\*+|\*+$/g, "").trim() : ""; };
+  const name = getLine("NAME"); if (!name) return alert("Could not find 'NAME:' in pasted text.");
+  games.push({ name, code: getLine("CODE")||"Latest Code", skill: getLine("SKILL")||"N/A", modes: getLine("MODES")||"N/A", multi: getLine("MULTI")||"N/A", mult: getLine("MULT")||"N/A", strat: getLine("STRAT")||"N/A", watch: getLine("WATCH")||"N/A", misc: getLine("MISC")||"N/A" });
+  saveDB(); document.getElementById("jsonPasteBox").value = ""; showDet(games.length - 1);
 }
+
+function openExp() { show("vExp"); document.getElementById("expBox").value = games.map(g => JSON.stringify({ messages: [{ role: "system", content: "Tournament pinball caddy." }, { role: "user", content: "Quick-Look for " + g.name }, { role: "assistant", content: Object.entries(g).map(([k,v]) => k + ": " + v).join("\n") }] })).join("\n"); }
 function copyExp() { document.getElementById("expBox").select(); navigator.clipboard.writeText(document.getElementById("expBox").value); alert("Copied!"); }
 function dlExp() { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([document.getElementById("expBox").value])); a.download = "pinball.jsonl"; a.click(); }
-
-async function genGame() {
-  const m = document.getElementById("aiIn").value.trim(), k = localStorage.getItem(KEY_DB);
-  if (!m) return alert("Type a pinball machine name first!");
-  if (!k) { alert("Please paste your free Gemini API key under 'API Key' first."); return openKey(); }
-  const btn = document.getElementById("genBtn"); btn.disabled = true; btn.textContent = "Searching...";
-  const prompt = `Return ONLY raw JSON (no markdown backticks) with keys: name, code, skill, modes, multi, mult, strat, watch for pinball machine "${m}". Use v5 Quick-Look format: include latest code version + visual clue in "code", theme-specific mode name in "modes", and pair every themed shot with its physical playfield location in parentheses like (mid-right) or (upper-left).`;}
-
-function copyPdfPrompt() {
-  const b = document.getElementById("pdfPromptBox");
-  b.select();
-  navigator.clipboard.writeText(b.value);
-  alert("Prompt copied! Open any AI chat, attach your PDF, and paste it.");
-}
-
-function importJsonCard() {
-  const raw = document.getElementById("jsonPasteBox").value.trim();
-  if (!raw) return alert("Paste the AI summary first!");
-  const getLine = (tag) => {
-    const m = raw.match(new RegExp("(?:^|\\n)[\\s\\*\\-•]*" + tag + "[\\s\\*]*:[\\s\\*]*(.+)", "i"));
-    return m ? m.pop().replace(/^\*+|\*+$/g, "").trim() : "";
-  };
-  const name = getLine("NAME");
-  if (!name) return alert("Could not find 'NAME:' in the pasted text. Check that your paste includes NAME: at the top.");
-  games.push({
-    name: name,
-    code: getLine("CODE") || "Latest Code",
-    skill: getLine("SKILL") || "N/A",
-    modes: getLine("MODES") || "N/A",
-    multi: getLine("MULTI") || "N/A",
-    mult: getLine("MULT") || "N/A",
-    strat: getLine("STRAT") || "N/A",
-    watch: getLine("WATCH") || "N/A"
-  });
-  saveDB();
-  document.getElementById("jsonPasteBox").value = "";
-  showDet(games.length - 1);
-}
-
 init();
 </script></body></html>
+
