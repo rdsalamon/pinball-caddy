@@ -1170,7 +1170,7 @@ const STARTERS = [
   }
 ];
 
-let games = [], editIdx = null, viewMode = "az", activeLetter = "ALL";
+let games = [], editIdx = null, viewMode = "az", activeLetter = "ALL", activeMfg = "ALL";
 const show = id => ["vList","vAddMenu","vDet","vForm","vImp","vExp"].forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
 const esc = s => String(s || "N/A").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const saveDB = () => localStorage.setItem(DB, JSON.stringify(games));
@@ -1196,7 +1196,7 @@ function init() {
 }
 
 function setMode(m) {
-  viewMode = m; activeLetter = "ALL";
+  viewMode = m; activeLetter = "ALL"; activeMfg = "ALL";
   document.getElementById("tabAZ").className = m === "az" ? "btn" : "btn btn-sec";
   document.getElementById("tabMfg").className = m === "mfg" ? "btn" : "btn btn-sec";
   renderList();
@@ -1220,7 +1220,14 @@ function renderList() {
   } else {
     const groups = {};
     filtered.forEach(g => { const m = getMfg(g); (groups[m] = groups[m] || []).push(g); });
-    Object.keys(groups).sort().forEach(m => {
+    const mfgs = ["ALL", ...Object.keys(groups).sort()];
+    mfgs.forEach(M => {
+      const b = document.createElement("button"); b.className = "pill" + (activeMfg === M ? " active" : "");
+      b.textContent = M === "ALL" ? `All Brands (${filtered.length})` : `${M} (${groups[M].length})`;
+      b.onclick = () => { activeMfg = M; renderList(); }; azBar.appendChild(b);
+    });
+    const showMfgs = activeMfg === "ALL" ? Object.keys(groups).sort() : [activeMfg].filter(m => groups[m]);
+    showMfgs.forEach(m => {
       const h = document.createElement("div"); h.className = "grp-hdr"; h.textContent = `${m} (${groups[m].length})`; list.appendChild(h);
       groups[m].forEach(g => list.appendChild(makeCard(g)));
     });
