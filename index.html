@@ -1478,19 +1478,23 @@ function loadUpdates() {
 }
 loadUpdates();
 
-function sendFeedback(mode = "mailto") {
+function sendFeedback() {
   const email = "RDSalamon@gmail.com";
   const type = document.getElementById("fbType").value;
   const game = document.getElementById("fbGame").value.trim();
   const msg = document.getElementById("fbMsg").value.trim();
   if (!msg) return alert("Please enter a brief message first.");
-  const subj = encodeURIComponent(`Pinball Caddy (${APP_VER}) - ${type}${game ? ": " + game : ""}`);
-  const body = encodeURIComponent(`Topic: ${type}\nMachine: ${game || "General"}\nApp Version: ${APP_VER}\n\n${msg}`);
-  if (mode === "gmail") {
-    window.open(`https://google.com{email}&su=${subj}&body=${body}`, "_blank");
-  } else {
-    location.href = `mailto:${email}?subject=${subj}&body=${body}`;
-  }
+  const verNum = APP_VER.replace(/^v/i, "");
+  const lines = [`Topic: ${type}`];
+  if (game) lines.push(`Machine: ${game}`);
+  lines.push("", "Message:", "", msg, "", `Pinball Caddy v${verNum}`);
+  const plainBody = lines.join("\n");
+  if (navigator.clipboard) navigator.clipboard.writeText(`To: ${email}\nSubject: Pinball Caddy - ${type}${game ? ": " + game : ""}\n\n${plainBody}`).catch(() => {});
+  const subj = encodeURIComponent(`Pinball Caddy - ${type}${game ? ": " + game : ""}`);
+  const body = encodeURIComponent(plainBody);
+  document.getElementById("fbGame").value = "";
+  document.getElementById("fbMsg").value = "";
+  location.href = `mailto:${email}?subject=${subj}&body=${body}`;
 }
 
 autoUpdate();
