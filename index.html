@@ -75,12 +75,13 @@
 </div>
 
 <div id="vInfo" class="hidden">
-  <div class="box">
-    <h3 style="margin-top:0;color:var(--gold);">About Pinball Caddy</h3>
-    <p style="font-size:14px;line-height:1.5;">Notes were sourced from <a href="https://pinballrulesheets.com" target="_blank" style="color:var(--accent);">pinballrulesheets.com</a>. You can create your own notes as well and toggle as necessary. Notes from pinballrulesheets were extracted using AI and may not be accurate.</p>
-    <p style="font-size:13px;color:var(--muted);line-height:1.4;">Tip: Tap any machine to view its Quick-Look guide, tap <b>Edit / Notes</b> to customize any field or add personal tournament notes, and use the toggle pill on edited fields to switch between your notes and the original rulesheet.</p>
-    <button class="btn btn-sec" style="width:100%;" onclick="show('vList')">← Back to Library</button>
-  </div>
+<div class="box">
+<h3 style="margin-top:0;color:var(--gold);">About Pinball Caddy</h3>
+<p style="font-size:14px;line-height:1.5;">Notes were sourced from <a href="https://pinballrulesheets.com" target="_blank" style="color:var(--accent);">pinballrulesheets.com</a>. You can create your own notes as well and toggle as necessary. Notes from pinballrulesheets were extracted using AI and may not be accurate.</p>
+<p style="font-size:13px;color:var(--muted);line-height:1.45;"><b>Personal Notes & Toggles:</b> Tap any machine to view its Quick-Look guide, tap <b>Edit / Notes</b> to customize any field or add personal tournament notes, and use the toggle pill on edited fields to switch between your notes and the original rulesheet.</p>
+<p style="font-size:13px;color:var(--muted);line-height:1.45;"><b>Code Releases & Rulesheet Updates:</b> Tap <b>Code Releases</b> in the bottom bar to browse recent manufacturer software updates (with release notes and official links) and new or updated rulesheets from pinballrulesheets.com (showing whether each rulesheet has been added to Pinball Caddy or is pending import). New releases also appear in a dismissible 14-day alert banner at the top of the library.</p>
+<button class="btn btn-sec" style="width:100%;" onclick="show('vList')">← Back to Library</button>
+</div>
 </div>
 
 <div id="vAddMenu" class="hidden">
@@ -165,7 +166,7 @@ MISC: [Extra tournament tips, wizard modes, or custom notes]</textarea>
 </div>
 
 <script>
-const APP_VER = "v1.7";
+const APP_VER = "v1.8";
 const CATALOG_DATE = "2026-11-16";
 const DB = "pinball_caddy_master";
 document.getElementById("verBadge").textContent = APP_VER;
