@@ -26,28 +26,33 @@ with sync_playwright() as p:
     page = context.new_page()
 
     for v in VENUES:
-        page.goto("https://ifpapinball.com", wait_until="networkidle", timeout=45000)
-        page.wait_for_timeout(2000)
+        page.goto("https://ifpapinball.com", wait_until="domcontentloaded", timeout=45000)
+        page.wait_for_timeout(3000)
 
-        loc_inputs = page.locator("input[type='text']")
-        count = loc_inputs.count()
-        print(f"Found {count} text inputs on IFPA calendar page")
-        for i in range(count):
-            ph = (loc_inputs.nth(i).get_attribute("placeholder") or "").lower()
-            nm = (loc_inputs.nth(i).get_attribute("name") or "").lower()
-            id_attr = (loc_inputs.nth(i).get_attribute("id") or "").lower()
-            if any(k in (ph + nm + id_attr) for k in ("loc", "addr", "city", "zip", "where")) or i == count - 1:
-                loc_inputs.nth(i).fill(v["search_loc"])
+        by_loc = page.locator("text=By Location").first
+        if by_loc.count() > 0:
+            by_loc.click()
+            page.wait_for_timeout(1000)
+
+        vis_inputs = page.locator("input:visible")
+        icount = vis_inputs.count()
+        print(f"Visible inputs after clicking By Location: {icount}")
+        for i in range(icount):
+            itype = (vis_inputs.nth(i).get_attribute("type") or "text").lower()
+            if itype in ("text", "search", ""):
+                vis_inputs.nth(i).fill(v["search_loc"])
+                print(f"Filled input #{i} with {v['search_loc']}")
                 break
 
-        search_btns = page.locator("button:has-text('Search'), input[value*='Search']")
-        if search_btns.count() > 0:
-            search_btns.last.click()
-        page.wait_for_timeout(4000)
+        search_btn = page.locator("button:visible:has-text('Search'), input:visible[value*='Search']").first
+        if search_btn.count() > 0:
+            search_btn.click()
+            print("Clicked visible Search button")
+        page.wait_for_timeout(5000)
 
         links = page.locator("a[href*='tournaments/view.php']")
         lcount = links.count()
-        print(f"Found {lcount} IFPA tournament links near {v['search_loc']}")
+        print(f"Found {lcount} IFPA tournament links after search")
 
         for i in range(lcount):
             a = links.nth(i)
