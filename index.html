@@ -36,6 +36,10 @@
 </header>
 
 <div id="vList">
+  <div id="updBanner" class="box hidden" style="border-color:var(--gold);background:#1c1917;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;">
+    <div onclick="showUpd()" style="cursor:pointer;flex:1;font-size:13px;"><b style="color:var(--gold);">⚡ New Updates:</b> <span id="updBannerTxt"></span> <span style="color:var(--accent);text-decoration:underline;">View →</span></div>
+    <button class="pill" onclick="dismissBanner()" title="Dismiss">✕</button>
+  </div>
   <div class="row" style="margin:0 0 10px;">
     <button class="btn" id="tabAZ" onclick="setMode('az')">A–Z Alphabetical</button>
     <button class="btn btn-sec" id="tabMfg" onclick="setMode('mfg')">By Manufacturer</button>
@@ -46,6 +50,28 @@
   </div>
   <div id="azBar" class="pills"></div>
   <div id="list"></div>
+</div>
+
+<div id="vUpd" class="hidden">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h3 style="margin:0;color:var(--gold);">Code & Rulesheet Updates</h3>
+      <button class="btn btn-sec" style="padding:6px 10px;" onclick="show('vList')">← Back</button>
+    </div>
+    <div class="row" style="margin:0 0 12px;">
+      <button class="btn" id="uTabCode" onclick="setUpdTab('code')">Code Releases</button>
+      <button class="btn btn-sec" id="uTabRule" onclick="setUpdTab('rule')">Rulesheet Updates</button>
+    </div>
+    <div id="updList"></div>
+  </div>
+</div>
+
+<div id="vUpdDet" class="hidden">
+  <div class="box" id="updDetBox"></div>
+  <div class="row">
+    <button class="btn btn-sec" onclick="show('vUpd')">← Back to Updates</button>
+    <a id="updExtLink" href="#" target="_blank" class="btn" style="text-align:center;text-decoration:none;">Official Release Page ↗</a>
+  </div>
 </div>
 
 <div id="vInfo" class="hidden">
@@ -133,14 +159,17 @@ MISC: [Extra tournament tips, wizard modes, or custom notes]</textarea>
 
 <div class="bar">
   <button class="btn btn-sec" onclick="show('vList')">Library</button>
-  <button class="btn btn-sec" onclick="show('vAddMenu')">Add Machine</button>
+  <button class="btn btn-sec" onclick="showUpd()">Code Releases</button>
+  <button class="btn btn-sec" onclick="show('vAddMenu')">Add Pin</button>
   <button class="btn btn-ok" onclick="openExp()">Backup</button>
 </div>
 
 <script>
-const APP_VER = "v1.5";
+const APP_VER = "v1.6";
+const CATALOG_DATE = "2026-11-16";
 const DB = "pinball_caddy_master";
 document.getElementById("verBadge").textContent = APP_VER;
+
 const STARTERS = [
   {
     "name": "Fallout Pinball (Stern)",
@@ -1189,7 +1218,8 @@ const STARTERS = [
 ;
 
 let games = [], editIdx = null, viewMode = "az", activeLetter = "ALL", activeMfg = "ALL";
-const show = id => ["vList","vInfo","vAddMenu","vDet","vForm","vImp","vExp"].forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
+const show = id => ["vList","vUpd","vUpdDet","vInfo","vAddMenu","vDet","vForm","vImp","vExp"].forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
+
 const esc = s => String(s || "N/A").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const saveDB = () => localStorage.setItem(DB, JSON.stringify(games));
 
@@ -1347,6 +1377,75 @@ function autoUpdate() {
   }
 }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") autoUpdate(); });
+
+let updData = { code_releases: [], rulesheet_updates: [] }, updTab = "code";
+
+function showUpd() { show("vUpd"); renderUpd(); }
+function setUpdTab(t) {
+  updTab = t;
+  document.getElementById("uTabCode").className = t === "code" ? "btn" : "btn btn-sec";
+  document.getElementById("uTabRule").className = t === "rule" ? "btn" : "btn btn-sec";
+  renderUpd();
+}
+
+function renderUpd() {
+  const box = document.getElementById("updList"); box.innerHTML = "";
+  if (updTab === "code") {
+    const items = updData.code_releases || [];
+    if (!items.length) { box.innerHTML = `<div style="color:var(--muted);font-size:13px;">No code releases logged yet.</div>`; return; }
+    items.forEach((c, idx) => {
+      const d = document.createElement("div"); d.className = "card"; d.style.background = "#0b1120";
+      d.innerHTML = `<div style="flex:1;padding-right:8px;"><b>${esc(c.game)} <span style="color:var(--gold);">${esc(c.version)}</span></b><div style="font-size:12px;color:var(--muted);">${esc(c.mfg || "")} • ${esc(c.date || "")}</div></div><button class="btn" style="padding:7px 10px;font-size:12px;" onclick="showCodeDet(${idx})">Details</button>`;
+      box.appendChild(d);
+    });
+  } else {
+    const items = updData.rulesheet_updates || [];
+    if (!items.length) { box.innerHTML = `<div style="color:var(--muted);font-size:13px;">No rulesheet updates logged yet.</div>`; return; }
+    items.forEach(r => {
+      const inCaddy = r.date && r.date <= CATALOG_DATE && STARTERS.some(s => (s._src || "").toLowerCase() === (r.url || "").toLowerCase() || s.name.toLowerCase().includes((r.game || "").toLowerCase()));
+      const badge = inCaddy
+        ? `<span style="color:var(--ok);font-size:11px;font-weight:700;">✅ Added to Caddy</span>`
+        : `<span style="color:var(--gold);font-size:11px;font-weight:700;">⏳ Pending Caddy Import</span>`;
+      const d = document.createElement("div"); d.className = "card"; d.style.background = "#0b1120";
+      d.innerHTML = `<div style="flex:1;padding-right:8px;"><div><b>${esc(r.game)}</b> <span style="font-size:11px;color:var(--muted);">(${esc(r.type || "Updated")})</span></div><div style="font-size:12px;color:var(--muted);margin:3px 0;">${esc(r.date || "")} • ${badge}</div><a href="${esc(r.url || "https://pinballrulesheets.com")}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">Open on pinballrulesheets.com ↗</a></div>`;
+      box.appendChild(d);
+    });
+  }
+}
+
+function showCodeDet(idx) {
+  const c = (updData.code_releases || [])[idx]; if (!c) return;
+  show("vUpdDet");
+  document.getElementById("updDetBox").innerHTML = `<h2 style="margin:0 0 4px;color:var(--gold);">${esc(c.game)} ${esc(c.version)}</h2><div style="font-size:12px;color:var(--muted);margin-bottom:12px;">${esc(c.mfg || "")} • Released ${esc(c.date || "")}</div><div class="fl">Release Notes & Changes</div><div style="white-space:pre-line;font-size:14px;line-height:1.5;">${esc(c.notes || "Check official release page for full changelog.")}</div>`;
+  const lnk = document.getElementById("updExtLink");
+  lnk.href = c.url || "#"; lnk.classList.toggle("hidden", !c.url);
+}
+
+function dismissBanner() {
+  const latestId = document.getElementById("updBanner").dataset.uid || "";
+  if (latestId) localStorage.setItem("pinball_dismissed_upd", latestId);
+  document.getElementById("updBanner").style.display = "none";
+}
+
+function loadUpdates() {
+  if (location.protocol === "file:") return;
+  fetch("updates.json?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(data => {
+    if (!data) return;
+    updData = data;
+    const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+    const recentCodes = (data.code_releases || []).filter(x => (x.date || "") >= twoWeeksAgo);
+    const recentRules = (data.rulesheet_updates || []).filter(x => (x.date || "") >= twoWeeksAgo);
+    const allRecent = [...recentCodes.map(x => `${x.game} ${x.version}`), ...recentRules.map(x => `${x.game} rulesheet`)];
+    if (!allRecent.length) return;
+    const uid = allRecent.join("|");
+    if (localStorage.getItem("pinball_dismissed_upd") === uid) return;
+    const b = document.getElementById("updBanner");
+    b.dataset.uid = uid; b.classList.remove("hidden"); b.style.display = "flex";
+    document.getElementById("updBannerTxt").textContent = allRecent.slice(0, 2).join(", ") + (allRecent.length > 2 ? ` (+${allRecent.length - 2} more)` : "");
+  }).catch(() => {});
+}
+loadUpdates();
+
 autoUpdate();
 
 init();
