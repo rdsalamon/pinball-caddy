@@ -128,7 +128,6 @@ try:
 except Exception as e:
     print("PinballRulesheets check warning:", e)
 
-add_code("test|pinball-caddy-test|v9.99", "Test Pinball Machine", "Test Mfg", "v9.99", TODAY, "https://pinballrulesheets.com", "Live email & banner test.")
 data["last_checked"] = TODAY
 data["seen_keys"] = sorted(seen)
 with open(DB_FILE, "w", encoding="utf-8") as f:
