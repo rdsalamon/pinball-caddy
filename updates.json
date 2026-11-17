@@ -3,18 +3,9 @@
   "seen_keys": [
     "rule|https://pinballrulesheets.com/rulesheet-master-list",
     "spooky|evil dead|v2026.10.30",
-    "stern|star wars: fall of the empire|v0.98.0",
-    "test|pinball-caddy-test|v9.99"
+    "stern|star wars: fall of the empire|v0.98.0"
   ],
   "code_releases": [
-    {
-      "game": "Test Pinball Machine",
-      "mfg": "Test Mfg",
-      "version": "v9.99",
-      "date": "2026-11-17",
-      "url": "https://pinballrulesheets.com",
-      "notes": "Live email & banner test."
-    },
     {
       "game": "Star Wars: Fall of the Empire",
       "mfg": "Stern Pinball",
