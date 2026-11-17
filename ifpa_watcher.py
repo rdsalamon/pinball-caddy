@@ -1,19 +1,15 @@
 import json, os, urllib.request, urllib.parse
-from datetime import datetime, timedelta
+from datetime import datetime
 
 API_KEY = os.environ.get("IFPA_API_KEY", "").strip()
 OUT_FILE = "tournaments.json"
-NOW = datetime.utcnow()
-TODAY = NOW.strftime("%Y-%m-%d")
-END_DATE = (NOW + timedelta(days=365)).strftime("%Y-%m-%d")
+TODAY = datetime.utcnow().strftime("%Y-%m-%d")
 
 VENUES = [
     {
         "name": "Morristown Game Vault",
         "address": "22 South St, Morristown, NJ 07960",
-        "lat": 40.7968,
-        "lon": -74.4815,
-        "radius": 5,
+        "state": "NJ",
         "match_terms": ["morristown game vault", "22 south"]
     }
 ]
@@ -27,30 +23,31 @@ seen_ids = set()
 for v in VENUES:
     params = urllib.parse.urlencode({
         "api_key": API_KEY,
-        "latitude": v["lat"],
-        "longitude": v["lon"],
-        "radius": v["radius"],
-        "distance_type": "mi",
-        "start_date": TODAY,
-        "end_date": END_DATE
+        "country": "US",
+        "stateprov": v["state"]
     })
     url = f"https://ifpapinball.com?{params}"
     req = urllib.request.Request(url, headers={
-        "User-Agent": "PinballCaddyIFPABot/1.0",
+        "User-Agent": "Mozilla/5.0 (PinballCaddyBot/1.0)",
         "Accept": "application/json",
         "X-API-Key": API_KEY
     })
     with urllib.request.urlopen(req, timeout=25) as r:
         raw = r.read().decode("utf-8", errors="ignore").strip()
+        print(f"IFPA HTTP {r.status}, bytes={len(raw)}")
         if not raw:
-            print("IFPA returned empty body for", v["name"])
+            print("Warning: IFPA returned 0 bytes. Check IFPA_API_KEY value.")
             payload = {}
         else:
             payload = json.loads(raw)
 
     events = []
     if isinstance(payload, dict):
-        events = payload.get("tournaments") or payload.get("tournament") or payload.get("calendar") or []
+        events = payload.get("tournaments") or payload.get("tournament") or payload.get("search") or []
+    elif isinstance(payload, list):
+        events = payload
+
+    print(f"Total NJ events returned by IFPA: {len(events)}")
 
     for ev in events:
         tid = str(ev.get("tournament_id", ""))
@@ -69,6 +66,8 @@ for v in VENUES:
             seen_ids.add(tid)
             start_d = str(ev.get("event_start_date") or ev.get("start_date") or "")[:10]
             end_d = str(ev.get("event_end_date") or ev.get("end_date") or "")[:10]
+            if end_d and end_d < TODAY:
+                continue
             all_tournaments.append({
                 "tournament_id": tid,
                 "venue_id": v["name"],
