@@ -9,7 +9,7 @@ VENUES = [
     {
         "name": "Morristown Game Vault",
         "address": "22 South St, Morristown, NJ 07960",
-        "search_loc": "07960",
+        "search_loc": "Morristown, NJ 07960",
         "match_terms": ["morristown game vault", "22 south"]
     }
 ]
@@ -25,6 +25,20 @@ with sync_playwright() as p:
     )
     page = context.new_page()
 
+    captured_json = []
+    def handle_resp(resp):
+        try:
+            if "ifpapinball.com" in resp.url and resp.status == 200:
+                ct = resp.headers.get("content-type", "")
+                if "json" in ct or "calendar" in resp.url or "tournament" in resp.url:
+                    txt = resp.text()
+                    if txt.strip().startswith(("{", "[")):
+                        captured_json.append((resp.url, json.loads(txt)))
+        except Exception:
+            pass
+
+    page.on("response", handle_resp)
+
     for v in VENUES:
         page.goto("https://ifpapinball.com", wait_until="domcontentloaded", timeout=45000)
         page.wait_for_timeout(3000)
@@ -35,54 +49,58 @@ with sync_playwright() as p:
             page.wait_for_timeout(1000)
 
         vis_inputs = page.locator("input:visible")
-        icount = vis_inputs.count()
-        print(f"Visible inputs after clicking By Location: {icount}")
-        for i in range(icount):
-            itype = (vis_inputs.nth(i).get_attribute("type") or "text").lower()
-            if itype in ("text", "search", ""):
-                vis_inputs.nth(i).fill(v["search_loc"])
-                print(f"Filled input #{i} with {v['search_loc']}")
+        print(f"Visible inputs: {vis_inputs.count()}")
+        if vis_inputs.count() > 0:
+            inp = vis_inputs.first
+            inp.click()
+            inp.fill(v["search_loc"])
+            page.wait_for_timeout(1500)
+            inp.press("ArrowDown")
+            inp.press("Enter")
+            page.wait_for_timeout(1000)
+
+        for sel in ["button:visible:has-text('Search')", "input:visible[type='submit']", "input:visible[value*='Search']", "a:visible:has-text('Search')"]:
+            btn = page.locator(sel).last
+            if btn.count() > 0:
+                btn.click()
+                print(f"Clicked search via: {sel}")
                 break
 
-        search_btn = page.locator("button:visible:has-text('Search'), input:visible[value*='Search']").first
-        if search_btn.count() > 0:
-            search_btn.click()
-            print("Clicked visible Search button")
         page.wait_for_timeout(5000)
+        print(f"Captured {len(captured_json)} JSON responses from IFPA")
 
-        links = page.locator("a[href*='tournaments/view.php']")
-        lcount = links.count()
-        print(f"Found {lcount} IFPA tournament links after search")
+        for u, payload in captured_json:
+            events = payload if isinstance(payload, list) else (payload.get("calendar") or payload.get("tournaments") or payload.get("tournament") or payload.get("results") or [])
+            if isinstance(events, list):
+                print(f"JSON from {u} has {len(events)} items")
+                for ev in events:
+                    if not isinstance(ev, dict):
+                        continue
+                    tid = str(ev.get("tournament_id") or ev.get("id") or "")
+                    if not tid or tid in seen_ids:
+                        continue
+                    blob = json.dumps(ev).lower()
+                    if any(term in blob for term in v["match_terms"]):
+                        seen_ids.add(tid)
+                        start_d = str(ev.get("event_start_date") or ev.get("start_date") or "")[:10]
+                        end_d = str(ev.get("event_end_date") or ev.get("end_date") or start_d)[:10]
+                        all_tournaments.append({
+                            "tournament_id": tid,
+                            "venue_id": v["name"],
+                            "name": ev.get("tournament_name") or ev.get("name") or "IFPA Tournament",
+                            "start_date": start_d,
+                            "end_date": end_d,
+                            "requires_reg": str(ev.get("registration_required", "")).upper() in ("Y", "YES", "TRUE", "1"),
+                            "details": str(ev.get("details") or ev.get("address1") or "").strip()[:180],
+                            "url": f"https://ifpapinball.com{tid}"
+                        })
 
-        for i in range(lcount):
-            a = links.nth(i)
-            href = a.get_attribute("href") or ""
-            m_id = re.search(r"t=(\d+)", href)
-            tid = m_id.group(1) if m_id else href
-            if not tid or tid in seen_ids:
-                continue
-
-            row_text = a.evaluate("el => (el.closest('tr, .event, .tournament, li, div') || el.parentElement).innerText")
-            clean_row = " ".join(row_text.split())
-            if any(term in clean_row.lower() for term in v["match_terms"]):
-                seen_ids.add(tid)
-                t_name = a.inner_text().strip() or "IFPA Tournament"
-                dates = re.findall(r"\d{4}-\d{2}-\d{2}|[A-Z][a-z]{2}\s+\d{1,2},?\s+\d{4}", clean_row)
-                start_d = dates if dates else TODAY
-                end_d = dates[-1] if len(dates) > 1 else start_d
-                full_url = href if href.startswith("http") else "https://ifpapinball.com" + ("" if href.startswith("/") else "/") + href
-                all_tournaments.append({
-                    "tournament_id": tid,
-                    "venue_id": v["name"],
-                    "name": t_name,
-                    "start_date": start_d,
-                    "end_date": end_d,
-                    "requires_reg": "registration" in clean_row.lower() or "pre-reg" in clean_row.lower(),
-                    "details": clean_row[:180],
-                    "url": full_url
-                })
+        body_txt = page.locator("body").inner_text()
+        print("Page text snippet:", repr(" ".join(body_txt.split())[:300]))
 
     browser.close()
+
+all_tournaments.sort(key=lambda x: x.get("start_date") or "9999-99-99")
 
 out = {
     "last_checked": TODAY,
