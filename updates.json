@@ -7,14 +7,6 @@
   ],
   "code_releases": [
     {
-      "game": "Fallout",
-      "mfg": "Stern Pinball",
-      "version": "v0.82.0",
-      "date": "2026-11-12",
-      "url": "https://sternpinball.com",
-      "notes": "Official Stern Pinball code release v0.82.0 (Pro / Premium / LE).\nCheck the Stern Game Code Library link below for the complete Read Me changelog."
-    },
-    {
       "game": "Star Wars: Fall of the Empire",
       "mfg": "Stern Pinball",
       "version": "v0.98.0",
