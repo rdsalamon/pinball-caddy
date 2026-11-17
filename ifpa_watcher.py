@@ -9,6 +9,7 @@ VENUES = [
     {
         "name": "Morristown Game Vault",
         "address": "22 South St, Morristown, NJ 07960",
+        "zip": "07960",
         "state": "NJ",
         "match_terms": ["morristown game vault", "22 south"]
     }
@@ -21,33 +22,32 @@ all_tournaments = []
 seen_ids = set()
 
 for v in VENUES:
-    params = urllib.parse.urlencode({
-        "api_key": API_KEY,
-        "country": "US",
-        "stateprov": v["state"]
-    })
-    url = f"https://ifpapinball.com?{params}"
-    req = urllib.request.Request(url, headers={
-        "User-Agent": "Mozilla/5.0 (PinballCaddyBot/1.0)",
-        "Accept": "application/json",
-        "X-API-Key": API_KEY
-    })
-    with urllib.request.urlopen(req, timeout=25) as r:
-        raw = r.read().decode("utf-8", errors="ignore").strip()
-        print(f"IFPA HTTP {r.status}, bytes={len(raw)}")
-        if not raw:
-            print("Warning: IFPA returned 0 bytes. Check IFPA_API_KEY value.")
-            payload = {}
-        else:
-            payload = json.loads(raw)
-
+    endpoints = [
+        f"https://ifpapinball.com?{urllib.parse.urlencode({'api_key': API_KEY, 'address': v['zip'], 'distance': 10, 'units': 'm'})}",
+        f"https://ifpapinball.com?{urllib.parse.urlencode({'api_key': API_KEY, 'country': 'US', 'stateprov': v['state']})}"
+    ]
     events = []
-    if isinstance(payload, dict):
-        events = payload.get("tournaments") or payload.get("tournament") or payload.get("search") or []
-    elif isinstance(payload, list):
-        events = payload
+    for url in endpoints:
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (PinballCaddyBot/1.0)",
+            "Accept": "application/json"
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=25) as r:
+                raw = r.read().decode("utf-8", errors="ignore").strip()
+                print(f"Tried {url.split('?')[0]} -> HTTP {r.status}, bytes={len(raw)}, starts={repr(raw[:60])}")
+                if raw.startswith("{") or raw.startswith("["):
+                    payload = json.loads(raw)
+                    if isinstance(payload, dict):
+                        events = payload.get("calendar") or payload.get("tournaments") or payload.get("tournament") or payload.get("search") or []
+                    elif isinstance(payload, list):
+                        events = payload
+                    if events:
+                        break
+        except Exception as e:
+            print(f"Endpoint error ({url.split('?')[0]}):", e)
 
-    print(f"Total NJ events returned by IFPA: {len(events)}")
+    print(f"Parsed {len(events)} total events for {v['name']}")
 
     for ev in events:
         tid = str(ev.get("tournament_id", ""))
