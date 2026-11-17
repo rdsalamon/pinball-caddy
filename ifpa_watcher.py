@@ -9,8 +9,9 @@ VENUES = [
     {
         "name": "Morristown Game Vault",
         "address": "22 South St, Morristown, NJ 07960",
-        "zip": "07960",
-        "state": "NJ",
+        "lat": "40.7968",
+        "lon": "-74.4815",
+        "radius": "5",
         "match_terms": ["morristown game vault", "22 south"]
     }
 ]
@@ -22,32 +23,25 @@ all_tournaments = []
 seen_ids = set()
 
 for v in VENUES:
-    endpoints = [
-        f"https://ifpapinball.com?{urllib.parse.urlencode({'api_key': API_KEY, 'address': v['zip'], 'distance': 10, 'units': 'm'})}",
-        f"https://ifpapinball.com?{urllib.parse.urlencode({'api_key': API_KEY, 'country': 'US', 'stateprov': v['state']})}"
-    ]
-    events = []
-    for url in endpoints:
-        req = urllib.request.Request(url, headers={
-            "User-Agent": "Mozilla/5.0 (PinballCaddyBot/1.0)",
-            "Accept": "application/json"
-        })
-        try:
-            with urllib.request.urlopen(req, timeout=25) as r:
-                raw = r.read().decode("utf-8", errors="ignore").strip()
-                print(f"Tried {url.split('?')[0]} -> HTTP {r.status}, bytes={len(raw)}, starts={repr(raw[:60])}")
-                if raw.startswith("{") or raw.startswith("["):
-                    payload = json.loads(raw)
-                    if isinstance(payload, dict):
-                        events = payload.get("calendar") or payload.get("tournaments") or payload.get("tournament") or payload.get("search") or []
-                    elif isinstance(payload, list):
-                        events = payload
-                    if events:
-                        break
-        except Exception as e:
-            print(f"Endpoint error ({url.split('?')[0]}):", e)
+    params = urllib.parse.urlencode({
+        "api_key": API_KEY,
+        "latitude": v["lat"],
+        "longitude": v["lon"],
+        "radius": v["radius"],
+        "distance_type": "m"
+    })
+    url = f"https://ifpapinball.com?{params}"
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "PinballCaddyIFPABot/1.0",
+        "Accept": "application/json"
+    })
+    with urllib.request.urlopen(req, timeout=25) as r:
+        raw = r.read().decode("utf-8", errors="ignore").strip()
+        print(f"HTTP {r.status}, bytes={len(raw)}, preview={repr(raw[:120])}")
+        payload = json.loads(raw) if raw.startswith(("{", "[")) else {}
 
-    print(f"Parsed {len(events)} total events for {v['name']}")
+    events = payload.get("tournaments") or payload.get("tournament") or payload.get("search") or []
+    print(f"Total events returned near {v['name']}: {len(events)}")
 
     for ev in events:
         tid = str(ev.get("tournament_id", ""))
