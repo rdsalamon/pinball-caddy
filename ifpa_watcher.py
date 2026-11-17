@@ -28,12 +28,10 @@ with sync_playwright() as p:
     captured_json = []
     def handle_resp(resp):
         try:
-            if "ifpapinball.com" in resp.url and resp.status == 200:
-                ct = resp.headers.get("content-type", "")
-                if "json" in ct or "calendar" in resp.url or "tournament" in resp.url:
-                    txt = resp.text()
-                    if txt.strip().startswith(("{", "[")):
-                        captured_json.append((resp.url, json.loads(txt)))
+            if resp.status == 200 and ("ifpa" in resp.url or "calendar" in resp.url or "tournament" in resp.url):
+                txt = resp.text().strip()
+                if txt.startswith(("{", "[")):
+                    captured_json.append((resp.url, json.loads(txt)))
         except Exception:
             pass
 
@@ -41,33 +39,47 @@ with sync_playwright() as p:
 
     for v in VENUES:
         page.goto("https://ifpapinball.com", wait_until="domcontentloaded", timeout=45000)
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(4000)
 
-        by_loc = page.locator("text=By Location").first
-        if by_loc.count() > 0:
-            by_loc.click()
-            page.wait_for_timeout(1000)
+        for fr in page.frames:
+            try:
+                tab = fr.locator("text=By Location").first
+                if tab.count() > 0:
+                    tab.click()
+                    page.wait_for_timeout(1500)
+            except Exception:
+                pass
 
-        vis_inputs = page.locator("input:visible")
-        print(f"Visible inputs: {vis_inputs.count()}")
-        if vis_inputs.count() > 0:
-            inp = vis_inputs.first
-            inp.click()
-            inp.fill(v["search_loc"])
-            page.wait_for_timeout(1500)
-            inp.press("ArrowDown")
-            inp.press("Enter")
-            page.wait_for_timeout(1000)
+        filled = False
+        for idx, fr in enumerate(page.frames):
+            try:
+                text_boxes = fr.locator("input:not([type='button']):not([type='submit']):not([type='hidden']):not([type='checkbox']):not([type='radio']):visible")
+                if text_boxes.count() > 0:
+                    inp = text_boxes.first
+                    inp.click()
+                    inp.fill(v["search_loc"])
+                    page.wait_for_timeout(1500)
+                    inp.press("ArrowDown")
+                    inp.press("Enter")
+                    page.wait_for_timeout(1000)
+                    print(f"Filled location box in frame #{idx} ({fr.url[:50]})")
 
-        for sel in ["button:visible:has-text('Search')", "input:visible[type='submit']", "input:visible[value*='Search']", "a:visible:has-text('Search')"]:
-            btn = page.locator(sel).last
-            if btn.count() > 0:
-                btn.click()
-                print(f"Clicked search via: {sel}")
-                break
+                    for sel in ["button:visible:has-text('Search')", "input:visible[type='submit']", "input:visible[value*='Search']", "a:visible:has-text('Search')"]:
+                        btn = fr.locator(sel).last
+                        if btn.count() > 0:
+                            btn.click()
+                            print(f"Clicked search button in frame #{idx} via {sel}")
+                            break
+                    filled = True
+                    break
+            except Exception as e:
+                print(f"Frame #{idx} check:", e)
+
+        if not filled:
+            print("No editable text input found in any frame. Frame URLs:", [f.url for f in page.frames])
 
         page.wait_for_timeout(5000)
-        print(f"Captured {len(captured_json)} JSON responses from IFPA")
+        print(f"Captured {len(captured_json)} JSON responses")
 
         for u, payload in captured_json:
             events = payload if isinstance(payload, list) else (payload.get("calendar") or payload.get("tournaments") or payload.get("tournament") or payload.get("results") or [])
@@ -94,9 +106,6 @@ with sync_playwright() as p:
                             "details": str(ev.get("details") or ev.get("address1") or "").strip()[:180],
                             "url": f"https://ifpapinball.com{tid}"
                         })
-
-        body_txt = page.locator("body").inner_text()
-        print("Page text snippet:", repr(" ".join(body_txt.split())[:300]))
 
     browser.close()
 
