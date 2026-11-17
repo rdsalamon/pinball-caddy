@@ -32,7 +32,10 @@
 <body>
 <header>
   <div><h1>PINBALL CADDY <span id="verBadge" style="font-size:12px;font-weight:500;color:var(--muted);"></span></h1><div id="sub" style="font-size:12px;color:var(--muted);">Loading Library...</div></div>
-  <button class="btn btn-gold" onclick="show('vInfo')">Info</button>
+  <div style="display:flex;gap:6px;flex-shrink:0;">
+    <button class="btn" style="padding:8px 10px;" onclick="show('vFb')">Feedback</button>
+    <button class="btn btn-gold" style="padding:8px 10px;" onclick="show('vInfo')">Info</button>
+  </div>
 </header>
 
 <div id="vList">
@@ -71,6 +74,29 @@
   <div class="row">
     <button class="btn btn-sec" onclick="show('vUpd')">← Back to Updates</button>
     <a id="updExtLink" href="#" target="_blank" class="btn" style="text-align:center;text-decoration:none;">Official Release Page ↗</a>
+  </div>
+</div>
+
+<div id="vFb" class="hidden">
+  <div class="box">
+    <h3 style="margin-top:0;color:var(--gold);">Send Feedback</h3>
+    <p style="font-size:13px;color:var(--muted);margin-top:0;">Spot a rule error, missing machine, or bug? Pick a topic below and tap <b>Send Email</b>.</p>
+    <div class="fl">Topic</div>
+    <select id="fbType" class="inp">
+      <option value="Rule Correction">Rule Correction</option>
+      <option value="Missing Machine">Missing Machine</option>
+      <option value="Bug / Display Issue">Bug / Display Issue</option>
+      <option value="Suggestion">Feature Suggestion</option>
+      <option value="Other">Other</option>
+    </select>
+    <div class="fl">Machine Name (Optional)</div>
+    <input type="text" id="fbGame" class="inp" placeholder="e.g. Fallout, King Kong, Jaws...">
+    <div class="fl">Your Message</div>
+    <textarea id="fbMsg" class="inp" placeholder="Type your feedback or rule tip here..."></textarea>
+    <div class="row">
+      <button class="btn btn-sec" onclick="show('vList')">Cancel</button>
+      <button class="btn btn-ok" onclick="sendFeedback()">Send Email ↗</button>
+    </div>
   </div>
 </div>
 
@@ -166,7 +192,7 @@ MISC: [Extra tournament tips, wizard modes, or custom notes]</textarea>
 </div>
 
 <script>
-const APP_VER = "v1.8";
+const APP_VER = "v1.9";
 const CATALOG_DATE = "2026-11-16";
 const DB = "pinball_caddy_master";
 document.getElementById("verBadge").textContent = APP_VER;
@@ -1219,7 +1245,8 @@ const STARTERS = [
 ;
 
 let games = [], editIdx = null, viewMode = "az", activeLetter = "ALL", activeMfg = "ALL";
-const show = id => ["vList","vUpd","vUpdDet","vInfo","vAddMenu","vDet","vForm","vImp","vExp"].forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
+
+const show = id => ["vList","vUpd","vUpdDet","vFb","vInfo","vAddMenu","vDet","vForm","vImp","vExp"].forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
 
 const esc = s => String(s || "N/A").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const saveDB = () => localStorage.setItem(DB, JSON.stringify(games));
@@ -1450,6 +1477,21 @@ function loadUpdates() {
   }).catch(() => {});
 }
 loadUpdates();
+
+function sendFeedback(mode = "mailto") {
+  const email = "RDSalamon@gmail.com";
+  const type = document.getElementById("fbType").value;
+  const game = document.getElementById("fbGame").value.trim();
+  const msg = document.getElementById("fbMsg").value.trim();
+  if (!msg) return alert("Please enter a brief message first.");
+  const subj = encodeURIComponent(`Pinball Caddy (${APP_VER}) - ${type}${game ? ": " + game : ""}`);
+  const body = encodeURIComponent(`Topic: ${type}\nMachine: ${game || "General"}\nApp Version: ${APP_VER}\n\n${msg}`);
+  if (mode === "gmail") {
+    window.open(`https://google.com{email}&su=${subj}&body=${body}`, "_blank");
+  } else {
+    location.href = `mailto:${email}?subject=${subj}&body=${body}`;
+  }
+}
 
 autoUpdate();
 
