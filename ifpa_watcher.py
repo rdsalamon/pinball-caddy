@@ -1,7 +1,6 @@
-import json, os, urllib.request, urllib.parse
+import json, re, urllib.request, urllib.parse
 from datetime import datetime
 
-API_KEY = os.environ.get("IFPA_API_KEY", "").strip()
 OUT_FILE = "tournaments.json"
 TODAY = datetime.utcnow().strftime("%Y-%m-%d")
 
@@ -9,68 +8,87 @@ VENUES = [
     {
         "name": "Morristown Game Vault",
         "address": "22 South St, Morristown, NJ 07960",
-        "lat": "40.7968",
-        "lon": "-74.4815",
-        "radius": "5",
+        "country": "United States",
+        "state": "NJ",
         "match_terms": ["morristown game vault", "22 south"]
     }
 ]
 
-if not API_KEY:
-    raise RuntimeError("IFPA_API_KEY secret is missing.")
+def unfold_ics(text):
+    return re.sub(r"\r?\n[ \t]", "", text)
+
+def parse_ics_date(val):
+    m = re.search(r"(\d{4})(\d{2})(\d{2})", val or "")
+    return f"{m.group(1)}-{m.group(2)}-{m.group(3)}" if m else ""
 
 all_tournaments = []
 seen_ids = set()
 
 for v in VENUES:
     params = urllib.parse.urlencode({
-        "api_key": API_KEY,
-        "latitude": v["lat"],
-        "longitude": v["lon"],
-        "radius": v["radius"],
-        "distance_type": "m"
+        "country": v["country"],
+        "state": v["state"],
+        "type": "MAIN"
     })
-    url = f"https://ifpapinball.com?{params}"
-    req = urllib.request.Request(url, headers={
-        "User-Agent": "PinballCaddyIFPABot/1.0",
-        "Accept": "application/json"
-    })
-    with urllib.request.urlopen(req, timeout=25) as r:
-        raw = r.read().decode("utf-8", errors="ignore").strip()
-        print(f"HTTP {r.status}, bytes={len(raw)}, preview={repr(raw[:120])}")
-        payload = json.loads(raw) if raw.startswith(("{", "[")) else {}
+    urls = [
+        f"https://ifpapinball.com?{params}",
+        f"https://ifpapinball.com?{params}"
+    ]
+    raw_ics = ""
+    for u in urls:
+        req = urllib.request.Request(u, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0.0.0 Safari/537.36",
+            "Accept": "text/calendar,text/plain,*/*"
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=25) as r:
+                txt = r.read().decode("utf-8", errors="ignore")
+                print(f"Tried {u.split('?')} -> HTTP {r.status}, bytes={len(txt)}, has_vcal={'BEGIN:VCALENDAR' in txt}")
+                if "BEGIN:VCALENDAR" in txt:
+                    raw_ics = unfold_ics(txt)
+                    break
+        except Exception as e:
+            print(f"Feed check ({u.split('?')}):", e)
 
-    events = payload.get("tournaments") or payload.get("tournament") or payload.get("search") or []
-    print(f"Total events returned near {v['name']}: {len(events)}")
+    if not raw_ics:
+        print(f"No .ics feed returned for {v['name']}")
+        continue
 
-    for ev in events:
-        tid = str(ev.get("tournament_id", ""))
-        if not tid or tid in seen_ids:
-            continue
-        blob = " ".join([
-            str(ev.get("tournament_name", "")),
-            str(ev.get("address1", "")),
-            str(ev.get("address2", "")),
-            str(ev.get("city", "")),
-            str(ev.get("raw_address", "")),
-            str(ev.get("details", ""))
-        ]).lower()
+    blocks = raw_ics.split("BEGIN:VEVENT")[1:]
+    print(f"Total IFPA VEVENTs in {v['state']}: {len(blocks)}")
 
+    for blk in blocks:
+        ev_text = blk.split("END:VEVENT")[0]
+        fields = {}
+        for line in ev_text.splitlines():
+            if ":" in line:
+                k, val = line.split(":", 1)
+                fields[k.split(";")[0].strip().upper()] = val.replace("\\n", " ").replace("\\,", ",").strip()
+
+        summary = fields.get("SUMMARY", "")
+        location = fields.get("LOCATION", "")
+        desc = fields.get("DESCRIPTION", "")
+        ev_url = fields.get("URL", "")
+        uid = fields.get("UID", summary + fields.get("DTSTART", ""))
+
+        blob = f"{summary} {location} {desc}".lower()
         if any(term in blob for term in v["match_terms"]):
-            seen_ids.add(tid)
-            start_d = str(ev.get("event_start_date") or ev.get("start_date") or "")[:10]
-            end_d = str(ev.get("event_end_date") or ev.get("end_date") or "")[:10]
+            if uid in seen_ids:
+                continue
+            seen_ids.add(uid)
+            start_d = parse_ics_date(fields.get("DTSTART", ""))
+            end_d = parse_ics_date(fields.get("DTEND", "")) or start_d
             if end_d and end_d < TODAY:
                 continue
             all_tournaments.append({
-                "tournament_id": tid,
+                "tournament_id": uid,
                 "venue_id": v["name"],
-                "name": ev.get("tournament_name", "IFPA Tournament"),
+                "name": summary or "IFPA Tournament",
                 "start_date": start_d,
                 "end_date": end_d,
-                "requires_reg": str(ev.get("registration_required", "")).upper() in ("Y", "YES", "TRUE", "1"),
-                "details": (ev.get("details") or "").strip()[:180],
-                "url": f"https://ifpapinball.com{tid}"
+                "requires_reg": "prereg" in blob or "pre-reg" in blob or "registration required" in blob,
+                "details": desc[:180],
+                "url": ev_url if ev_url.startswith("http") else "https://ifpapinball.com"
             })
 
 all_tournaments.sort(key=lambda x: x.get("start_date") or "9999-99-99")
