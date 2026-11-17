@@ -40,7 +40,7 @@ def add_rule(key, game, rtype, url):
 try:
     soup = BeautifulSoup(fetch("https://sternpinball.com"), "html.parser")
     text = soup.get_text("\n", strip=True)
-    for m in re.finditer(r"([A-Z0-9][A-Za-z0-9 :&'\-()]+?)\s+(v\d+\.\d+(?:\.\d+)?)", text):
+    for m in re.finditer(r"([A-Z0-9][A-Za-z0-9 :&'\-()]{2,50})[\s\S]{1,80}?(v\d+\.\d+(?:\.\d+)?)", text):
         game, ver = m.group(1).strip(), m.group(2).strip()
         if 3 <= len(game) <= 55 and "code" not in game.lower():
             add_code(f"stern|{game}|{ver}", game, "Stern Pinball", ver, TODAY,
