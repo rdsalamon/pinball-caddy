@@ -1,10 +1,9 @@
-yaml
 name: Pinball Code Watcher
 
 on:
   schedule:
-    - cron: '0 13,21 * * *' # 8:00 AM & 4:00 PM EST (13:00 & 21:00 UTC)
-  workflow_dispatch:         # Allows manual "Run workflow" button anytime
+    - cron: '0 13,21 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -36,6 +35,6 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: '⚡ New Pinball Code / Rulesheet Update Detected',
+              title: 'New Pinball Code / Rulesheet Update Detected',
               body
             });
