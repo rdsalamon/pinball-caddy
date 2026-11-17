@@ -30,18 +30,23 @@ for v in VENUES:
         "latitude": v["lat"],
         "longitude": v["lon"],
         "radius": v["radius"],
-        "distance_type": "m",
+        "distance_type": "mi",
         "start_date": TODAY,
         "end_date": END_DATE
     })
     url = f"https://ifpapinball.com?{params}"
-    req = urllib.request.Request(url, headers={"User-Agent": "PinballCaddyIFPABot/1.0"})
-    try:
-        with urllib.request.urlopen(req, timeout=25) as r:
-            payload = json.loads(r.read().decode("utf-8", errors="ignore"))
-    except urllib.error.HTTPError as e:
-        err_body = e.read().decode("utf-8", errors="ignore")
-        raise RuntimeError(f"IFPA API HTTP {e.code}: {err_body}")
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "PinballCaddyIFPABot/1.0",
+        "Accept": "application/json",
+        "X-API-Key": API_KEY
+    })
+    with urllib.request.urlopen(req, timeout=25) as r:
+        raw = r.read().decode("utf-8", errors="ignore").strip()
+        if not raw:
+            print("IFPA returned empty body for", v["name"])
+            payload = {}
+        else:
+            payload = json.loads(raw)
 
     events = []
     if isinstance(payload, dict):
