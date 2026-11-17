@@ -36,24 +36,20 @@
 </header>
 
 <div id="vList">
-  <div id="updBanner" class="box hidden" style="border-color:var(--gold);background:#1c1917;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;">
-  <div onclick="showUpd(updBannerTarget)" style="cursor:pointer;flex:1;font-size:13px;line-height:1.35;"><b id="updBannerLbl" style="color:var(--gold);">⚡ Code Release:</b> <span id="updBannerTxt"></span> <span style="color:var(--accent);text-decoration:underline;white-space:nowrap;">View →</span></div>
-  <button class="pill" style="flex-shrink:0;padding:4px 9px;" onclick="dismissBanner()" title="Dismiss">✕</button>
+<div id="updBanner" class="box hidden" style="border-color:var(--gold);background:#1c1917;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;">
+<div onclick="showUpd(updBannerTarget)" style="cursor:pointer;flex:1;font-size:13px;line-height:1.35;"><b id="updBannerLbl" style="color:var(--gold);">⚡ Code Release:</b> <span id="updBannerTxt"></span> <span style="color:var(--accent);text-decoration:underline;white-space:nowrap;">View →</span></div>
+<button class="pill" style="flex-shrink:0;padding:4px 9px;" onclick="dismissBanner()" title="Dismiss">✕</button>
 </div>
-
-    <div onclick="showUpd()" style="cursor:pointer;flex:1;font-size:13px;"><b style="color:var(--gold);">⚡ New Updates:</b> <span id="updBannerTxt"></span> <span style="color:var(--accent);text-decoration:underline;">View →</span></div>
-    <button class="pill" onclick="dismissBanner()" title="Dismiss">✕</button>
-  </div>
-  <div class="row" style="margin:0 0 10px;">
-    <button class="btn" id="tabAZ" onclick="setMode('az')">A–Z Alphabetical</button>
-    <button class="btn btn-sec" id="tabMfg" onclick="setMode('mfg')">By Manufacturer</button>
-  </div>
-  <div style="display:flex;gap:6px;margin-bottom:10px;">
-    <input type="text" id="qIn" class="inp" style="margin:0;flex:1;" placeholder="Search any machine..." oninput="renderList()">
-    <button class="btn btn-sec" onclick="document.getElementById('qIn').value='';renderList();" title="Clear search">✕</button>
-  </div>
-  <div id="azBar" class="pills"></div>
-  <div id="list"></div>
+<div class="row" style="margin:0 0 10px;">
+<button class="btn" id="tabAZ" onclick="setMode('az')">A–Z Alphabetical</button>
+<button class="btn btn-sec" id="tabMfg" onclick="setMode('mfg')">By Manufacturer</button>
+</div>
+<div style="display:flex;gap:6px;margin-bottom:10px;">
+<input type="text" id="qIn" class="inp" style="margin:0;flex:1;" placeholder="Search any machine..." oninput="renderList()">
+<button class="btn btn-sec" onclick="document.getElementById('qIn').value='';renderList();" title="Clear search">✕</button>
+</div>
+<div id="azBar" class="pills"></div>
+<div id="list"></div>
 </div>
 
 <div id="vUpd" class="hidden">
