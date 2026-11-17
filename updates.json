@@ -1,0 +1,42 @@
+{
+  "last_checked": "2026-11-16",
+  "seen_keys": [
+    "stern|fallout|v0.82.0",
+    "stern|star wars: fall of the empire|v0.98.0",
+    "spooky|evil dead|v2026.10.30"
+  ],
+  "code_releases": [
+    {
+      "game": "Fallout",
+      "mfg": "Stern Pinball",
+      "version": "v0.82.0",
+      "date": "2026-11-12",
+      "url": "https://sternpinball.com",
+      "notes": "Official Stern Pinball code release v0.82.0 (Pro / Premium / LE).\nCheck the Stern Game Code Library link below for the complete Read Me changelog."
+    },
+    {
+      "game": "Star Wars: Fall of the Empire",
+      "mfg": "Stern Pinball",
+      "version": "v0.98.0",
+      "date": "2026-11-03",
+      "url": "https://sternpinball.com",
+      "notes": "Official Stern Pinball code release v0.98.0 (Pro / Premium / LE).\nIncludes rules refinements, scoring balance updates, and bug fixes."
+    },
+    {
+      "game": "Evil Dead",
+      "mfg": "Spooky Pinball",
+      "version": "v2026.10.30",
+      "date": "2026-10-30",
+      "url": "https://spookypinball.com",
+      "notes": "Added Midnight Madness mode along with gameplay polish and rule adjustments."
+    }
+  ],
+  "rulesheet_updates": [
+    {
+      "game": "Fallout",
+      "type": "Rulesheet Added",
+      "date": "2026-11-15",
+      "url": "https://pinballrulesheets.com"
+    }
+  ]
+}
