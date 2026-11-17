@@ -36,7 +36,10 @@
 </header>
 
 <div id="vList">
-  <div id="updBanner" class="box hidden" style="border-color:var(--gold);background:#1c1917;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;">
+  <div id="updBanner" class="box hidden" style="border-color:var(--gold);background:#1c1917;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;">
+  <div onclick="showUpd(updBannerTarget)" style="cursor:pointer;flex:1;font-size:13px;line-height:1.35;"><b id="updBannerLbl" style="color:var(--gold);">⚡ Code Release:</b> <span id="updBannerTxt"></span> <span style="color:var(--accent);text-decoration:underline;white-space:nowrap;">View →</span></div>
+  <button class="pill" style="flex-shrink:0;padding:4px 9px;" onclick="dismissBanner()" title="Dismiss">✕</button>
+</div>
 
     <div onclick="showUpd()" style="cursor:pointer;flex:1;font-size:13px;"><b style="color:var(--gold);">⚡ New Updates:</b> <span id="updBannerTxt"></span> <span style="color:var(--accent);text-decoration:underline;">View →</span></div>
     <button class="pill" onclick="dismissBanner()" title="Dismiss">✕</button>
@@ -166,7 +169,7 @@ MISC: [Extra tournament tips, wizard modes, or custom notes]</textarea>
 </div>
 
 <script>
-const APP_VER = "v1.6";
+const APP_VER = "v1.7";
 const CATALOG_DATE = "2026-11-16";
 const DB = "pinball_caddy_master";
 document.getElementById("verBadge").textContent = APP_VER;
@@ -1379,9 +1382,10 @@ function autoUpdate() {
 }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") autoUpdate(); });
 
-let updData = { code_releases: [], rulesheet_updates: [] }, updTab = "code";
+let updData = { code_releases: [], rulesheet_updates: [] }, updTab = "code", updBannerTarget = "code";
 
-function showUpd() { show("vUpd"); renderUpd(); }
+function showUpd(tab = "code") { show("vUpd"); setUpdTab(tab); }
+
 function setUpdTab(t) {
   updTab = t;
   document.getElementById("uTabCode").className = t === "code" ? "btn" : "btn btn-sec";
@@ -1436,10 +1440,13 @@ function loadUpdates() {
     const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
     const recentCodes = (data.code_releases || []).filter(x => (x.date || "") >= twoWeeksAgo);
     const recentRules = (data.rulesheet_updates || []).filter(x => (x.date || "") >= twoWeeksAgo);
-    const allRecent = [...recentCodes.map(x => `${x.game} ${x.version}`), ...recentRules.map(x => `${x.game} rulesheet`)];
+    const allRecent = [...recentCodes.map(x => `${x.game} ${x.version}`), ...recentRules.map(x => x.game)];
     if (!allRecent.length) return;
     const uid = allRecent.join("|");
     if (localStorage.getItem("pinball_dismissed_upd") === uid) return;
+
+    updBannerTarget = recentCodes.length ? "code" : "rule";
+    document.getElementById("updBannerLbl").textContent = recentCodes.length ? "⚡ Code Release:" : "📝 New/Updated Rulesheet:";
     const b = document.getElementById("updBanner");
     b.dataset.uid = uid; b.classList.remove("hidden"); b.style.display = "flex";
     document.getElementById("updBannerTxt").textContent = allRecent.slice(0, 2).join(", ") + (allRecent.length > 2 ? ` (+${allRecent.length - 2} more)` : "");
