@@ -1,9 +1,10 @@
 {
-  "last_checked": "2026-11-16",
+  "last_checked": "2026-11-17",
   "seen_keys": [
+    "rule|https://pinballrulesheets.com/rulesheet-master-list",
+    "spooky|evil dead|v2026.10.30",
     "stern|fallout|v0.82.0",
-    "stern|star wars: fall of the empire|v0.98.0",
-    "spooky|evil dead|v2026.10.30"
+    "stern|star wars: fall of the empire|v0.98.0"
   ],
   "code_releases": [
     {
@@ -32,6 +33,12 @@
     }
   ],
   "rulesheet_updates": [
+    {
+      "game": "Master List",
+      "type": "Added / Listed",
+      "date": "2026-11-17",
+      "url": "https://pinballrulesheets.com/rulesheet-master-list"
+    },
     {
       "game": "Fallout",
       "type": "Rulesheet Added",
