@@ -35,6 +35,7 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
+              assignees: ['rdsalamon'],
               title: 'New Pinball Code / Rulesheet Update Detected',
               body
             });
