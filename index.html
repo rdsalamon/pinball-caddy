@@ -204,7 +204,7 @@ MISC: [Extra tournament tips, wizard modes, or custom notes]</textarea>
 </div>
 
 <script>
-const APP_VER = "v2.0";
+const APP_VER = "v2.2";
 const CATALOG_DATE = "2026-11-16";
 const DB = "pinball_caddy_master";
 document.getElementById("verBadge").textContent = APP_VER;
@@ -1509,43 +1509,115 @@ function sendFeedback() {
   location.href = `mailto:${email}?subject=${subj}&body=${body}`;
 }
 
-let calData = { venues: [{ name: "Morristown Game Vault", address: "22 South St, Morristown, NJ 07960" }], tournaments: [] };
+const BRIDGE_URL = "https://script.google.com/macros/s/AKfycbxz2i3d-o8Lo1CGgT8t1Y_bKf2FEJjwDbP2xRfGzh1MVTYSSEjb49isuBdDt2ctTIu0/exec";
 
-function showCal() { show("vCal"); renderCal(); }
+let calData = {
+  venues: [{ name: "Morristown Game Vault", address: "22 South St, Morristown, NJ 07960", matchTerms: ["morristown game vault", "22 south"] }],
+  tournaments: [],
+  loaded: false
+};
+
+function showCal() {
+  show("vCal");
+  renderCal();
+  if (!calData.loaded) loadTournaments();
+}
+
+function parseIcsEvents(rawText, venue) {
+  const unfolded = rawText.replace(/\r?\n[ \t]/g, "");
+  const blocks = unfolded.split("BEGIN:VEVENT").slice(1);
+  const today = new Date().toISOString().slice(0, 10);
+  const out = [];
+  const seen = new Set();
+
+  blocks.forEach(blk => {
+    const evText = blk.split("END:VEVENT").at(0);
+    const fields = {};
+    evText.split(/\r?\n/).forEach(line => {
+      const idx = line.indexOf(":");
+      if (idx > 0) {
+        const key = line.slice(0, idx).split(";").at(0).trim().toUpperCase();
+        const val = line.slice(idx + 1).replace(/\\n/g, " ").replace(/\\,/g, ",").trim();
+        fields[key] = val;
+      }
+    });
+
+    const summary = fields.SUMMARY || "";
+    const location = fields.LOCATION || "";
+    const desc = fields.DESCRIPTION || "";
+    const evUrl = fields.URL || "";
+    const uid = fields.UID || (summary + (fields.DTSTART || ""));
+    const blob = `${summary} ${location} ${desc}`.toLowerCase();
+
+    if (venue.matchTerms.some(t => blob.includes(t)) && !seen.has(uid)) {
+      seen.add(uid);
+      const mStart = (fields.DTSTART || "").match(/(\d{4})(\d{2})(\d{2})/);
+      const mEnd = (fields.DTEND || "").match(/(\d{4})(\d{2})(\d{2})/);
+      const startD = mStart ? `${mStart.at(1)}-${mStart.at(2)}-${mStart.at(3)}` : "";
+      const endD = mEnd ? `${mEnd.at(1)}-${mEnd.at(2)}-${mEnd.at(3)}` : startD;
+      if (endD && endD < today) return;
+
+      out.push({
+        tournament_id: uid,
+        venue_id: venue.name,
+        name: summary || "IFPA Tournament",
+        start_date: startD,
+        end_date: endD,
+        requires_reg: /pre-?reg|registration required/i.test(blob),
+        details: (location || desc).slice(0, 180),
+        url: evUrl.startsWith("http") ? evUrl : "https://ifpapinball.com"
+      });
+    }
+  });
+  return out;
+}
+
+async function loadTournaments() {
+  if (!BRIDGE_URL || BRIDGE_URL.includes("PASTE_YOUR")) return;
+  try {
+    const r = await fetch(BRIDGE_URL + "?t=" + Date.now(), { cache: "no-store" });
+    const data = await r.json();
+    const ics = (data && data.ics) || "";
+    const all = [];
+    if (ics.includes("BEGIN:VCALENDAR")) {
+      calData.venues.forEach(v => all.push(...parseIcsEvents(ics, v)));
+    }
+    all.sort((a, b) => (a.start_date || "9999").localeCompare(b.start_date || "9999"));
+    calData.tournaments = all;
+  } catch (e) {}
+  calData.loaded = true;
+  if (!document.getElementById("vCal").classList.contains("hidden")) renderCal();
+}
 
 function renderCal() {
-  const box = document.getElementById("calList"); box.innerHTML = "";
-  const venues = calData.venues || [];
-  const tours = calData.tournaments || [];
-  venues.forEach(v => {
+  const box = document.getElementById("calList");
+  box.innerHTML = "";
+  (calData.venues || []).forEach(v => {
     const hdr = document.createElement("div");
     hdr.style.cssText = "margin:10px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--bdr);";
     hdr.innerHTML = `<b style="color:var(--accent);font-size:15px;">${esc(v.name)}</b><div style="font-size:12px;color:var(--muted);">${esc(v.address || "")}</div>`;
     box.appendChild(hdr);
 
-    const vTours = tours.filter(t => (t.venue_id || "").toLowerCase() === v.name.toLowerCase());
+    const vTours = (calData.tournaments || []).filter(t => (t.venue_id || "").toLowerCase() === v.name.toLowerCase());
     if (!vTours.length) {
       const emp = document.createElement("div");
       emp.style.cssText = "font-size:13px;color:var(--muted);padding:6px 0 12px;";
-      emp.textContent = "No upcoming IFPA tournaments found yet (check after first bot sync).";
+      emp.textContent = calData.loaded ? "No upcoming IFPA tournaments found for this venue." : "Loading live IFPA tournaments...";
       box.appendChild(emp);
       return;
     }
+
     vTours.forEach(t => {
-      const d = document.createElement("div"); d.className = "card"; d.style.background = "#0b1120";
+      const d = document.createElement("div");
+      d.className = "card";
+      d.style.background = "#0b1120";
       const regBadge = t.requires_reg ? `<span style="color:var(--gold);font-size:11px;font-weight:700;"> • Pre-Reg Required</span>` : "";
-      d.innerHTML = `<div style="flex:1;"><b>${esc(t.name)}</b><div style="font-size:12px;color:var(--muted);margin:3px 0;">📅 ${esc(t.start_date)}${t.end_date && t.end_date !== t.start_date ? " to " + esc(t.end_date) : ""}${regBadge}</div>${t.details ? `<div style="font-size:12px;color:var(--txt);margin-bottom:4px;">${esc(t.details)}</div>` : ""}<a href="${esc(t.url || "https://ifpapinball.com")}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">IFPA Tournament Page ↗</a></div>`;
+      d.innerHTML = `<div style="flex:1;"><b>${esc(t.name)}</b><div style="font-size:12px;color:var(--muted);margin:3px 0;">📅 ${esc(t.start_date)}${t.end_date && t.end_date !== t.start_date ? " to " + esc(t.end_date) : ""}${regBadge}</div>${t.details ? `<div style="font-size:12px;color:var(--txt);margin-bottom:4px;">${esc(t.details)}</div>` : ""}<a href="${esc(t.url)}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">IFPA Tournament Page ↗</a></div>`;
       box.appendChild(d);
     });
   });
 }
 
-function loadTournaments() {
-  if (location.protocol === "file:") return;
-  fetch("tournaments.json?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(data => {
-    if (data) calData = data;
-  }).catch(() => {});
-}
 loadTournaments();
 
 autoUpdate();
