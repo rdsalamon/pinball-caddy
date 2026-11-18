@@ -79,11 +79,29 @@
 
 <div id="vCal" class="hidden">
   <div class="box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:6px;">
       <h3 style="margin:0;color:var(--gold);">Venue Calendar</h3>
-      <button class="btn btn-sec" style="padding:6px 10px;" onclick="show('vList')">← Back</button>
+      <div style="display:flex;gap:6px;">
+        <button class="btn" style="padding:6px 10px;" onclick="toggleAddVenue()">+ Add Venue</button>
+        <button class="btn btn-sec" style="padding:6px 10px;" onclick="show('vList')">← Back</button>
+      </div>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Showing upcoming IFPA tournaments at your saved venues.</div>
+
+    <div id="addVenueBox" class="hidden" style="background:#0b1120;border:1px solid var(--bdr);border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-weight:700;color:var(--gold);margin-bottom:6px;font-size:14px;">Add Saved Venue</div>
+      <div class="fl">Venue Name</div>
+      <input type="text" id="avName" class="inp" placeholder="e.g. Rock Fantasy">
+      <div class="fl">Street Address</div>
+      <input type="text" id="avStreet" class="inp" placeholder="e.g. 12 E Main St">
+      <div class="fl">City, State or ZIP (Prevents Same-Street Mixups)</div>
+      <input type="text" id="avCity" class="inp" placeholder="e.g. Middletown, NY or 10940">
+      <div class="row">
+        <button class="btn btn-sec" onclick="toggleAddVenue(false)">Cancel</button>
+        <button class="btn btn-ok" onclick="saveNewVenue()">Save Venue</button>
+      </div>
+    </div>
+
+    <div id="calPills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
     <div id="calList"></div>
   </div>
 </div>
@@ -204,7 +222,7 @@ MISC: [Extra tournament tips, wizard modes, or custom notes]</textarea>
 </div>
 
 <script>
-const APP_VER = "v2.2";
+const APP_VER = "v2.5";
 const CATALOG_DATE = "2026-11-16";
 const DB = "pinball_caddy_master";
 document.getElementById("verBadge").textContent = APP_VER;
@@ -1511,10 +1529,40 @@ function sendFeedback() {
 
 const BRIDGE_URL = "https://script.google.com/macros/s/AKfycbxz2i3d-o8Lo1CGgT8t1Y_bKf2FEJjwDbP2xRfGzh1MVTYSSEjb49isuBdDt2ctTIu0/exec";
 
+const VENUE_STORE_KEY = "pinball_saved_venues_v2";
+const TOUR_CACHE_KEY = "pinball_cached_tours_v2";
+const DEFAULT_VENUES = [
+  {
+    id: "mgv-default",
+    name: "Morristown Game Vault",
+    street: "22 South St",
+    city: "Morristown, NJ 07960"
+  }
+];
+
+function getSavedVenues() {
+  try {
+    const raw = localStorage.getItem(VENUE_STORE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  localStorage.setItem(VENUE_STORE_KEY, JSON.stringify(DEFAULT_VENUES));
+  return [...DEFAULT_VENUES];
+}
+
+function setSavedVenues(list) {
+  localStorage.setItem(VENUE_STORE_KEY, JSON.stringify(list));
+  calData.venues = list;
+}
+
 let calData = {
-  venues: [{ name: "Morristown Game Vault", address: "22 South St, Morristown, NJ 07960", matchTerms: ["morristown game vault", "22 south"] }],
+  venues: getSavedVenues(),
   tournaments: [],
-  loaded: false
+  loaded: false,
+  feedDown: false,
+  selectedVenueId: "ALL"
 };
 
 function showCal() {
@@ -1523,49 +1571,108 @@ function showCal() {
   if (!calData.loaded) loadTournaments();
 }
 
-function parseIcsEvents(rawText, venue) {
-  const unfolded = rawText.replace(/\r?\n[ \t]/g, "");
-  const blocks = unfolded.split("BEGIN:VEVENT").slice(1);
+function toggleAddVenue(forceState) {
+  const box = document.getElementById("addVenueBox");
+  const showIt = typeof forceState === "boolean" ? forceState : box.classList.contains("hidden");
+  box.classList.toggle("hidden", !showIt);
+}
+
+function saveNewVenue() {
+  const name = document.getElementById("avName").value.trim();
+  const street = document.getElementById("avStreet").value.trim();
+  const city = document.getElementById("avCity").value.trim();
+
+  if (!name) return alert("Please enter a Venue Name.");
+  if (!street) return alert("Please enter a Street Address (e.g., 12 E Main St).");
+  if (!city) return alert("Please enter a City, State or ZIP (e.g., Middletown, NY or 10940).");
+
+  const list = getSavedVenues();
+  const newVenue = { id: "v-" + Date.now(), name, street, city };
+  list.push(newVenue);
+  setSavedVenues(list);
+
+  document.getElementById("avName").value = "";
+  document.getElementById("avStreet").value = "";
+  document.getElementById("avCity").value = "";
+  toggleAddVenue(false);
+
+  calData.selectedVenueId = newVenue.id;
+  calData.loaded = false;
+  renderCal();
+  loadTournaments();
+}
+
+function removeVenue(id) {
+  const target = calData.venues.find(v => v.id === id);
+  if (!target) return;
+  if (!confirm(`Remove "${target.name}" from your saved venues?`)) return;
+  const updated = calData.venues.filter(v => v.id !== id);
+  setSavedVenues(updated);
+  calData.tournaments = calData.tournaments.filter(t => t.venue_id !== id);
+  if (calData.selectedVenueId === id) calData.selectedVenueId = "ALL";
+  renderCal();
+}
+
+function normAddr(str) {
+  return (str || "").toLowerCase()
+    .replace(/(\d)([a-z])/g, "$1 $2")
+    .replace(/(\d)-(\d)/g, "$1$2")
+    .replace(/\b(street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|lane|ln|way|court|ct)\.?\b/g, " ")
+    .replace(/\be\.?\b/g, "east")
+    .replace(/\bw\.?\b/g, "west")
+    .replace(/\bn\.?\b/g, "north")
+    .replace(/\bs\.?\b/g, "south")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function matchesVenueAddress(blob, venue) {
+  const cleanBlob = normAddr(blob);
+  const vName = (venue.name || "").toLowerCase().trim();
+  if (vName && blob.includes(vName)) return true;
+
+  const streetCore = normAddr(venue.street);
+  const cityTokens = normAddr(venue.city).split(" ").filter(tok => tok.length >= 3 && tok !== "usa");
+
+  const hasStreet = streetCore.length >= 3 && cleanBlob.includes(streetCore);
+  const hasCityOrZip = cityTokens.some(tok => cleanBlob.includes(tok));
+  return hasStreet && hasCityOrZip;
+}
+
+function parseIfpaApiEvents(rawBody, venue) {
+  let payload = {};
+  try { payload = JSON.parse(rawBody); } catch (e) { return null; }
+  const events = payload.tournaments || payload.tournament || payload.search || [];
+  if (!Array.isArray(events)) return null;
+
   const today = new Date().toISOString().slice(0, 10);
   const out = [];
   const seen = new Set();
 
-  blocks.forEach(blk => {
-    const evText = blk.split("END:VEVENT").at(0);
-    const fields = {};
-    evText.split(/\r?\n/).forEach(line => {
-      const idx = line.indexOf(":");
-      if (idx > 0) {
-        const key = line.slice(0, idx).split(";").at(0).trim().toUpperCase();
-        const val = line.slice(idx + 1).replace(/\\n/g, " ").replace(/\\,/g, ",").trim();
-        fields[key] = val;
-      }
-    });
+  events.forEach(ev => {
+    const tid = String(ev.tournament_id || "");
+    if (!tid || seen.has(tid)) return;
 
-    const summary = fields.SUMMARY || "";
-    const location = fields.LOCATION || "";
-    const desc = fields.DESCRIPTION || "";
-    const evUrl = fields.URL || "";
-    const uid = fields.UID || (summary + (fields.DTSTART || ""));
-    const blob = `${summary} ${location} ${desc}`.toLowerCase();
+    const addrLine = [ev.address1, ev.address2, ev.city, ev.stateprov, ev.postal_code].filter(Boolean).join(", ");
+    const blob = [ev.tournament_name, addrLine, ev.raw_address, ev.details].filter(Boolean).join(" ").toLowerCase();
 
-    if (venue.matchTerms.some(t => blob.includes(t)) && !seen.has(uid)) {
-      seen.add(uid);
-      const mStart = (fields.DTSTART || "").match(/(\d{4})(\d{2})(\d{2})/);
-      const mEnd = (fields.DTEND || "").match(/(\d{4})(\d{2})(\d{2})/);
-      const startD = mStart ? `${mStart.at(1)}-${mStart.at(2)}-${mStart.at(3)}` : "";
-      const endD = mEnd ? `${mEnd.at(1)}-${mEnd.at(2)}-${mEnd.at(3)}` : startD;
+    if (matchesVenueAddress(blob, venue)) {
+      seen.add(tid);
+      const startD = String(ev.event_start_date || ev.start_date || "").slice(0, 10);
+      const endD = String(ev.event_end_date || ev.end_date || startD).slice(0, 10);
       if (endD && endD < today) return;
 
+      const viewBase = ["https://", "www.ifpapinball.com", "/tournaments/view.php?t="].join("");
       out.push({
-        tournament_id: uid,
-        venue_id: venue.name,
-        name: summary || "IFPA Tournament",
+        tournament_id: tid,
+        venue_id: venue.id,
+        name: ev.tournament_name || "IFPA Tournament",
         start_date: startD,
         end_date: endD,
-        requires_reg: /pre-?reg|registration required/i.test(blob),
-        details: (location || desc).slice(0, 180),
-        url: evUrl.startsWith("http") ? evUrl : "https://ifpapinball.com"
+        requires_reg: /^(y|yes|true|1)$/i.test(String(ev.registration_required || "")),
+        details: (addrLine || ev.details || "").slice(0, 180),
+        url: viewBase + encodeURIComponent(tid)
       });
     }
   });
@@ -1575,34 +1682,95 @@ function parseIcsEvents(rawText, venue) {
 async function loadTournaments() {
   if (!BRIDGE_URL || BRIDGE_URL.includes("PASTE_YOUR")) return;
   try {
-    const r = await fetch(BRIDGE_URL + "?t=" + Date.now(), { cache: "no-store" });
-    const data = await r.json();
-    const ics = (data && data.ics) || "";
-    const all = [];
-    if (ics.includes("BEGIN:VCALENDAR")) {
-      calData.venues.forEach(v => all.push(...parseIcsEvents(ics, v)));
+    const cached = JSON.parse(localStorage.getItem(TOUR_CACHE_KEY) || "[]");
+    if (Array.isArray(cached) && cached.length) calData.tournaments = cached;
+  } catch (e) {}
+
+  const venues = getSavedVenues();
+  calData.venues = venues;
+  const all = [];
+  let anyFeedDown = false;
+
+  for (const v of venues) {
+    try {
+      const fullAddr = `${v.street}, ${v.city}`;
+      const r = await fetch(`${BRIDGE_URL}?address=${encodeURIComponent(fullAddr)}&t=${Date.now()}`, { cache: "no-store" });
+      const data = await r.json();
+      const parsed = data && data.body ? parseIfpaApiEvents(data.body, v) : null;
+      if (Array.isArray(parsed)) {
+        all.push(...parsed);
+      } else {
+        anyFeedDown = true;
+      }
+    } catch (e) {
+      anyFeedDown = true;
     }
+  }
+
+  calData.feedDown = anyFeedDown;
+  if (!anyFeedDown || all.length > 0) {
     all.sort((a, b) => (a.start_date || "9999").localeCompare(b.start_date || "9999"));
     calData.tournaments = all;
-  } catch (e) {}
+    try { localStorage.setItem(TOUR_CACHE_KEY, JSON.stringify(all)); } catch (e) {}
+  }
   calData.loaded = true;
   if (!document.getElementById("vCal").classList.contains("hidden")) renderCal();
 }
 
 function renderCal() {
+  const pills = document.getElementById("calPills");
   const box = document.getElementById("calList");
+  pills.innerHTML = "";
   box.innerHTML = "";
-  (calData.venues || []).forEach(v => {
+
+  if (calData.feedDown) {
+    const warn = document.createElement("div");
+    warn.style.cssText = "background:#451a03;border:1px solid #d97706;color:#fde68a;padding:8px 10px;border-radius:8px;font-size:12px;margin-bottom:10px;";
+    warn.textContent = "⚠️ IFPA Calendar is temporarily down or under maintenance. Showing last saved schedule.";
+    box.appendChild(warn);
+  }
+
+  const venues = calData.venues || [];
+  const tours = calData.tournaments || [];
+
+  const makePill = (id, label) => {
+    const b = document.createElement("button");
+    const active = calData.selectedVenueId === id;
+    b.className = active ? "btn" : "btn btn-sec";
+    b.style.cssText = "padding:6px 10px;font-size:12px;";
+    b.textContent = label;
+    b.onclick = () => { calData.selectedVenueId = id; renderCal(); };
+    pills.appendChild(b);
+  };
+
+  if (venues.length > 1) makePill("ALL", `All Venues (${venues.length})`);
+  venues.forEach(v => makePill(v.id, v.name));
+
+  const visibleVenues = calData.selectedVenueId === "ALL"
+    ? venues
+    : venues.filter(v => v.id === calData.selectedVenueId);
+
+  if (!visibleVenues.length) {
+    const emp = document.createElement("div");
+    emp.style.cssText = "font-size:13px;color:var(--muted);padding:10px 0;";
+    emp.innerHTML = "No saved venues yet. Tap <b>+ Add Venue</b> above to add your first pinball location.";
+    box.appendChild(emp);
+    return;
+  }
+
+  visibleVenues.forEach(v => {
     const hdr = document.createElement("div");
-    hdr.style.cssText = "margin:10px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--bdr);";
-    hdr.innerHTML = `<b style="color:var(--accent);font-size:15px;">${esc(v.name)}</b><div style="font-size:12px;color:var(--muted);">${esc(v.address || "")}</div>`;
+    hdr.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin:12px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--bdr);gap:8px;";
+    hdr.innerHTML = `<div><b style="color:var(--accent);font-size:15px;">${esc(v.name)}</b><div style="font-size:12px;color:var(--muted);">${esc(v.street)}${v.city ? ", " + esc(v.city) : ""}</div></div><button class="btn btn-del" style="padding:4px 8px;font-size:11px;" onclick="removeVenue('${esc(v.id)}')">Remove</button>`;
     box.appendChild(hdr);
 
-    const vTours = (calData.tournaments || []).filter(t => (t.venue_id || "").toLowerCase() === v.name.toLowerCase());
+    const vTours = tours.filter(t => t.venue_id === v.id);
     if (!vTours.length) {
       const emp = document.createElement("div");
       emp.style.cssText = "font-size:13px;color:var(--muted);padding:6px 0 12px;";
-      emp.textContent = calData.loaded ? "No upcoming IFPA tournaments found for this venue." : "Loading live IFPA tournaments...";
+      emp.textContent = calData.feedDown
+        ? "Unable to reach IFPA feed right now — try again shortly."
+        : (calData.loaded ? "No upcoming IFPA tournaments found for this venue." : "Loading live IFPA tournaments...");
       box.appendChild(emp);
       return;
     }
