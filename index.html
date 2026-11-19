@@ -33,7 +33,7 @@
 <header>
   <div><h1>PINBALL CADDY <span id="verBadge" style="font-size:12px;font-weight:500;color:var(--muted);"></span></h1><div id="sub" style="font-size:12px;color:var(--muted);">Loading Library...</div></div>
   <div style="display:flex;gap:6px;flex-shrink:0;">
-    <button class="btn" style="padding:8px 10px;" onclick="show('vFb')">Feedback</button>
+    <button id="topNavBtn" class="btn" style="padding:8px 10px;" onclick="toggleTopNav()">Calendar</button>
     <button class="btn btn-gold" style="padding:8px 10px;" onclick="show('vInfo')">Info</button>
   </div>
 </header>
@@ -214,15 +214,14 @@ MISC: [Extra tournament tips, wizard modes, or custom notes]</textarea>
 </div>
 
 <div class="bar">
-  <button class="btn btn-sec" onclick="show('vList')">Library</button>
   <button class="btn btn-sec" onclick="showUpd()">Code Releases</button>
-  <button class="btn btn-sec" onclick="showCal()">Calendar</button>
   <button class="btn btn-sec" onclick="show('vAddMenu')">Add Pin</button>
+  <button class="btn btn-sec" onclick="show('vFb')">Feedback</button>
   <button class="btn btn-ok" onclick="openExp()">Backup</button>
 </div>
 
 <script>
-const APP_VER = "v2.5";
+const APP_VER = "v2.6";
 const CATALOG_DATE = "2026-11-16";
 const DB = "pinball_caddy_master";
 document.getElementById("verBadge").textContent = APP_VER;
@@ -1276,7 +1275,28 @@ const STARTERS = [
 
 let games = [], editIdx = null, viewMode = "az", activeLetter = "ALL", activeMfg = "ALL";
 
-const show = id => ["vList","vUpd","vUpdDet","vCal","vFb","vInfo","vAddMenu","vDet","vForm","vImp","vExp"].forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
+function updateTopNavBtn(id) {
+  const btn = document.getElementById("topNavBtn");
+  if (!btn) return;
+  btn.textContent = id === "vCal" ? "Library" : "Calendar";
+}
+
+function toggleTopNav() {
+  const isCal = !document.getElementById("vCal").classList.contains("hidden");
+  if (isCal) {
+    show("vList");
+  } else {
+    showCal();
+  }
+}
+
+const show = id => {
+  ["vList","vUpd","vUpdDet","vCal","vFb","vInfo","vAddMenu","vDet","vForm","vImp","vExp"].forEach(v => {
+    const el = document.getElementById(v);
+    if (el) el.classList.toggle("hidden", v !== id);
+  });
+  updateTopNavBtn(id);
+};
 
 const esc = s => String(s || "N/A").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const saveDB = () => localStorage.setItem(DB, JSON.stringify(games));
@@ -1300,7 +1320,7 @@ function init() {
   const customOrEdited = saved.filter(g => g._edited || !starterUrls.has((g._src || g.name).toLowerCase()));
   const keepKeys = new Set(customOrEdited.map(g => (g._src || g.name).toLowerCase()));
   games = [...customOrEdited, ...STARTERS.filter(g => !keepKeys.has((g._src || g.name).toLowerCase()))];
-  saveDB(); renderList();
+  saveDB(); renderList(); updateTopNavBtn("vList");
 }
 
 function setMode(m) {
