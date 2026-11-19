@@ -101,7 +101,10 @@
       </div>
     </div>
 
-    <div id="calPills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+      <div id="calPills" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"></div>
+      <button id="calSortBtn" class="btn btn-sec" style="padding:6px 10px;font-size:12px;font-weight:700;" onclick="toggleCalSort()">Sort All by Date</button>
+    </div>
     <div id="calList"></div>
   </div>
 </div>
@@ -214,14 +217,14 @@ MISC: [Extra tournament tips, wizard modes, or custom notes]</textarea>
 </div>
 
 <div class="bar">
-  <button class="btn btn-sec" onclick="showUpd()">Code Releases</button>
-  <button class="btn btn-sec" onclick="show('vAddMenu')">Add Pin</button>
+  <button id="barBtnCode" class="btn btn-sec" onclick="showUpd()">Code Releases</button>
+  <button id="barBtnAdd" class="btn btn-sec" onclick="show('vAddMenu')">Add Pin</button>
   <button class="btn btn-sec" onclick="show('vFb')">Feedback</button>
   <button class="btn btn-ok" onclick="openExp()">Backup</button>
 </div>
 
 <script>
-const APP_VER = "v2.7";
+const APP_VER = "v2.8";
 const CATALOG_DATE = "2026-11-16";
 const DB = "pinball_caddy_master";
 document.getElementById("verBadge").textContent = APP_VER;
@@ -1296,6 +1299,11 @@ const show = id => {
     if (el) el.classList.toggle("hidden", v !== id);
   });
   updateTopNavBtn(id);
+  const isCal = (id === "vCal");
+  const bCode = document.getElementById("barBtnCode");
+  const bAdd = document.getElementById("barBtnAdd");
+  if (bCode) bCode.classList.toggle("hidden", isCal);
+  if (bAdd) bAdd.classList.toggle("hidden", isCal);
 };
 
 const esc = s => String(s || "N/A").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -1582,8 +1590,17 @@ let calData = {
   tournaments: [],
   loaded: false,
   feedDown: false,
-  selectedVenueId: "ALL"
+  selectedVenueId: "ALL",
+  sortByDate: false
 };
+
+function toggleCalSort() {
+  calData.sortByDate = !calData.sortByDate;
+  if (calData.sortByDate) {
+    calData.selectedVenueId = "ALL";
+  }
+  renderCal();
+}
 
 function showCal() {
   show("vCal");
@@ -1617,6 +1634,7 @@ function saveNewVenue() {
   toggleAddVenue(false);
 
   calData.selectedVenueId = newVenue.id;
+  calData.sortByDate = false;
   calData.loaded = false;
   renderCal();
   loadTournaments();
@@ -1740,8 +1758,18 @@ async function loadTournaments() {
 function renderCal() {
   const pills = document.getElementById("calPills");
   const box = document.getElementById("calList");
+  const sortBtn = document.getElementById("calSortBtn");
   pills.innerHTML = "";
   box.innerHTML = "";
+
+  const venues = calData.venues || [];
+  const tours = calData.tournaments || [];
+
+  if (sortBtn) {
+    sortBtn.style.display = venues.length > 0 ? "inline-block" : "none";
+    sortBtn.className = calData.sortByDate ? "btn btn-gold" : "btn btn-sec";
+    sortBtn.textContent = calData.sortByDate ? "Group by Venue" : "Sort All by Date";
+  }
 
   if (calData.feedDown) {
     const warn = document.createElement("div");
@@ -1750,21 +1778,70 @@ function renderCal() {
     box.appendChild(warn);
   }
 
-  const venues = calData.venues || [];
-  const tours = calData.tournaments || [];
-
   const makePill = (id, label) => {
     const b = document.createElement("button");
-    const active = calData.selectedVenueId === id;
+    const active = !calData.sortByDate && calData.selectedVenueId === id;
     b.className = active ? "btn" : "btn btn-sec";
     b.style.cssText = "padding:6px 10px;font-size:12px;";
     b.textContent = label;
-    b.onclick = () => { calData.selectedVenueId = id; renderCal(); };
+    b.onclick = () => { calData.selectedVenueId = id; calData.sortByDate = false; renderCal(); };
     pills.appendChild(b);
   };
 
   if (venues.length > 1) makePill("ALL", `All Venues (${venues.length})`);
   venues.forEach(v => makePill(v.id, v.name));
+
+  if (!venues.length) {
+    const emp = document.createElement("div");
+    emp.style.cssText = "font-size:13px;color:var(--muted);padding:10px 0;";
+    emp.innerHTML = "No saved venues yet. Tap <b>+ Add Venue</b> above to add your first pinball location.";
+    box.appendChild(emp);
+    return;
+  }
+
+  if (calData.sortByDate) {
+    const venueMap = new Map(venues.map(v => [v.id, v]));
+    const validVenueIds = new Set(venues.map(v => v.id));
+    const mergedTours = tours
+      .filter(t => validVenueIds.has(t.venue_id))
+      .slice()
+      .sort((a, b) => (a.start_date || "9999").localeCompare(b.start_date || "9999") || (a.name || "").localeCompare(b.name || ""));
+
+    if (!mergedTours.length) {
+      const emp = document.createElement("div");
+      emp.style.cssText = "font-size:13px;color:var(--muted);padding:6px 0 12px;";
+      emp.textContent = calData.feedDown
+        ? "Unable to reach IFPA feed right now — try again shortly."
+        : (calData.loaded ? "No upcoming IFPA tournaments found across saved venues." : "Loading live IFPA tournaments...");
+      box.appendChild(emp);
+      return;
+    }
+
+    const subHdr = document.createElement("div");
+    subHdr.style.cssText = "font-size:12px;color:var(--muted);margin:4px 0 10px;font-weight:600;";
+    subHdr.textContent = `All Upcoming Tournaments (${mergedTours.length}) • Sorted by Date`;
+    box.appendChild(subHdr);
+
+    mergedTours.forEach(t => {
+      const v = venueMap.get(t.venue_id);
+      const vName = v ? v.name : "Saved Venue";
+      const d = document.createElement("div");
+      d.className = "card";
+      d.style.background = "#0b1120";
+      const regBadge = t.requires_reg ? `<span style="color:var(--gold);font-size:11px;font-weight:700;"> • Pre-Reg Required</span>` : "";
+      d.innerHTML = `<div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+          <b>${esc(t.name)}</b>
+          <span style="background:var(--card);border:1px solid var(--border);color:var(--accent);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;">📍 ${esc(vName)}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin:3px 0;">📅 ${esc(t.start_date)}${t.end_date && t.end_date !== t.start_date ? " to " + esc(t.end_date) : ""}${regBadge}</div>
+        ${t.details ? `<div style="font-size:12px;color:var(--text);margin-bottom:4px;">${esc(t.details)}</div>` : ""}
+        <a href="${esc(t.url)}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">IFPA Tournament Page ↗</a>
+      </div>`;
+      box.appendChild(d);
+    });
+    return;
+  }
 
   const visibleVenues = calData.selectedVenueId === "ALL"
     ? venues
@@ -1773,7 +1850,7 @@ function renderCal() {
   if (!visibleVenues.length) {
     const emp = document.createElement("div");
     emp.style.cssText = "font-size:13px;color:var(--muted);padding:10px 0;";
-    emp.innerHTML = "No saved venues yet. Tap <b>+ Add Venue</b> above to add your first pinball location.";
+    emp.innerHTML = "No saved venues match your selection.";
     box.appendChild(emp);
     return;
   }
@@ -1800,7 +1877,7 @@ function renderCal() {
       d.className = "card";
       d.style.background = "#0b1120";
       const regBadge = t.requires_reg ? `<span style="color:var(--gold);font-size:11px;font-weight:700;"> • Pre-Reg Required</span>` : "";
-      d.innerHTML = `<div style="flex:1;"><b>${esc(t.name)}</b><div style="font-size:12px;color:var(--muted);margin:3px 0;">📅 ${esc(t.start_date)}${t.end_date && t.end_date !== t.start_date ? " to " + esc(t.end_date) : ""}${regBadge}</div>${t.details ? `<div style="font-size:12px;color:var(--txt);margin-bottom:4px;">${esc(t.details)}</div>` : ""}<a href="${esc(t.url)}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">IFPA Tournament Page ↗</a></div>`;
+      d.innerHTML = `<div style="flex:1;"><b>${esc(t.name)}</b><div style="font-size:12px;color:var(--muted);margin:3px 0;">📅 ${esc(t.start_date)}${t.end_date && t.end_date !== t.start_date ? " to " + esc(t.end_date) : ""}${regBadge}</div>${t.details ? `<div style="font-size:12px;color:var(--text);margin-bottom:4px;">${esc(t.details)}</div>` : ""}<a href="${esc(t.url)}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">IFPA Tournament Page ↗</a></div>`;
       box.appendChild(d);
     });
   });
