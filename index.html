@@ -101,10 +101,24 @@
       </div>
     </div>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-      <div id="calPills" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;"></div>
-      <button id="calSortBtn" class="btn btn-sec" style="padding:6px 10px;font-size:12px;font-weight:700;" onclick="toggleCalSort()">Sort All by Date</button>
+    <div id="nearbySearchBox" class="hidden" style="background:#0b1120;border:1px solid var(--bdr);border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div class="fl" style="margin-top:0;">City, State, ZIP, or Street Address</div>
+      <input type="text" id="nbLoc" class="inp" placeholder="e.g. Wayne, NJ or 07470">
+      <div class="fl">Search Radius (Miles)</div>
+      <div class="row" style="margin-bottom:0;">
+        <select id="nbRadius" class="inp" style="margin-bottom:0;flex:1;">
+          <option value="10">10 miles</option>
+          <option value="25" selected>25 miles</option>
+          <option value="50">50 miles</option>
+          <option value="100">100 miles</option>
+          <option value="150">150 miles</option>
+          <option value="250">250 miles</option>
+        </select>
+        <button class="btn btn-ok" onclick="runNearbySearch()">Search</button>
+      </div>
     </div>
+
+    <div id="calPills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
     <div id="calList"></div>
   </div>
 </div>
@@ -219,12 +233,14 @@ MISC: [Extra tournament tips, wizard modes, or custom notes]</textarea>
 <div class="bar">
   <button id="barBtnCode" class="btn btn-sec" onclick="showUpd()">Code Releases</button>
   <button id="barBtnAdd" class="btn btn-sec" onclick="show('vAddMenu')">Add Pin</button>
+  <button id="barBtnCalSort" class="btn btn-sec hidden" onclick="toggleCalSort()">Sort All by Date</button>
+  <button id="barBtnNearby" class="btn btn-sec hidden" onclick="toggleNearbyMode()">Search Nearby</button>
   <button class="btn btn-sec" onclick="show('vFb')">Feedback</button>
-  <button class="btn btn-ok" onclick="openExp()">Backup</button>
+  <button id="barBtnBak" class="btn btn-ok" onclick="openExp()">Backup</button>
 </div>
 
 <script>
-const APP_VER = "v2.8";
+const APP_VER = "v2.11";
 const CATALOG_DATE = "2026-11-16";
 const DB = "pinball_caddy_master";
 document.getElementById("verBadge").textContent = APP_VER;
@@ -1302,8 +1318,17 @@ const show = id => {
   const isCal = (id === "vCal");
   const bCode = document.getElementById("barBtnCode");
   const bAdd = document.getElementById("barBtnAdd");
+  const bBak = document.getElementById("barBtnBak");
+  const bCalSort = document.getElementById("barBtnCalSort");
+  const bNearby = document.getElementById("barBtnNearby");
   if (bCode) bCode.classList.toggle("hidden", isCal);
   if (bAdd) bAdd.classList.toggle("hidden", isCal);
+  if (bBak) bBak.classList.toggle("hidden", isCal);
+  if (bCalSort) bCalSort.classList.toggle("hidden", !isCal || (typeof calData !== "undefined" && calData.nearbyMode));
+  if (bNearby) bNearby.classList.toggle("hidden", !isCal);
+  if (!isCal && typeof calData !== "undefined" && calData.nearbyMode) {
+    exitNearbySearch();
+  }
 };
 
 const esc = s => String(s || "N/A").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -1329,6 +1354,12 @@ function init() {
   const keepKeys = new Set(customOrEdited.map(g => (g._src || g.name).toLowerCase()));
   games = [...customOrEdited, ...STARTERS.filter(g => !keepKeys.has((g._src || g.name).toLowerCase()))];
   saveDB(); renderList(); updateTopNavBtn("vList");
+
+  const sNb = getSavedNearby();
+  const locIn = document.getElementById("nbLoc");
+  const radIn = document.getElementById("nbRadius");
+  if (locIn && sNb.location) locIn.value = sNb.location;
+  if (radIn && sNb.radius) radIn.value = sNb.radius;
 }
 
 function setMode(m) {
@@ -1585,13 +1616,34 @@ function setSavedVenues(list) {
   calData.venues = list;
 }
 
+const NEARBY_STORE_KEY = "pinball_nearby_search_v1";
+
+function getSavedNearby() {
+  try {
+    const raw = localStorage.getItem(NEARBY_STORE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") return parsed;
+    }
+  } catch (e) {}
+  return { location: "", radius: "25" };
+}
+
+function setSavedNearby(location, radius) {
+  try {
+    localStorage.setItem(NEARBY_STORE_KEY, JSON.stringify({ location, radius }));
+  } catch (e) {}
+}
+
 let calData = {
   venues: getSavedVenues(),
   tournaments: [],
   loaded: false,
   feedDown: false,
   selectedVenueId: "ALL",
-  sortByDate: false
+  sortByDate: false,
+  nearbyMode: false,
+  nearbyResults: []
 };
 
 function toggleCalSort() {
@@ -1604,8 +1656,12 @@ function toggleCalSort() {
 
 function showCal() {
   show("vCal");
-  renderCal();
-  if (!calData.loaded) loadTournaments();
+  if (calData.nearbyMode) {
+    exitNearbySearch();
+  } else {
+    renderCal();
+    if (!calData.loaded) loadTournaments();
+  }
 }
 
 function toggleAddVenue(forceState) {
@@ -1758,7 +1814,7 @@ async function loadTournaments() {
 function renderCal() {
   const pills = document.getElementById("calPills");
   const box = document.getElementById("calList");
-  const sortBtn = document.getElementById("calSortBtn");
+  const sortBtn = document.getElementById("barBtnCalSort");
   pills.innerHTML = "";
   box.innerHTML = "";
 
@@ -1766,8 +1822,8 @@ function renderCal() {
   const tours = calData.tournaments || [];
 
   if (sortBtn) {
-    sortBtn.style.display = venues.length > 0 ? "inline-block" : "none";
-    sortBtn.className = calData.sortByDate ? "btn btn-gold" : "btn btn-sec";
+    sortBtn.classList.toggle("btn-gold", calData.sortByDate);
+    sortBtn.classList.toggle("btn-sec", !calData.sortByDate);
     sortBtn.textContent = calData.sortByDate ? "Group by Venue" : "Sort All by Date";
   }
 
@@ -1881,6 +1937,274 @@ function renderCal() {
       box.appendChild(d);
     });
   });
+}
+
+function calcMiles(lat1, lon1, lat2, lon2) {
+  const p1 = Number(lat1), l1 = Number(lon1), p2 = Number(lat2), l2 = Number(lon2);
+  if (isNaN(p1) || isNaN(l1) || isNaN(p2) || isNaN(l2)) return null;
+  const R = 3958.8;
+  const dLat = (p2 - p1) * Math.PI / 180;
+  const dLon = (l2 - l1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(p1 * Math.PI / 180) * Math.cos(p2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return Math.round(R * c * 10) / 10;
+}
+
+function toggleNearbyMode() {
+  if (calData.nearbyMode) {
+    exitNearbySearch();
+  } else {
+    enterNearbySearch();
+  }
+}
+
+function enterNearbySearch() {
+  calData.nearbyMode = true;
+  const calHdr = document.querySelector("#vCal h3");
+  if (calHdr) calHdr.textContent = "Search Nearby";
+  const addVenueBtn = document.querySelector("#vCal button[onclick*='toggleAddVenue']");
+  if (addVenueBtn) addVenueBtn.classList.add("hidden");
+  const addVenueBox = document.getElementById("addVenueBox");
+  if (addVenueBox) addVenueBox.classList.add("hidden");
+
+  const pills = document.getElementById("calPills");
+  if (pills) {
+    pills.innerHTML = "";
+    pills.classList.add("hidden");
+  }
+  const nbBox = document.getElementById("nearbySearchBox");
+  if (nbBox) nbBox.classList.remove("hidden");
+
+  const btnNearby = document.getElementById("barBtnNearby");
+  if (btnNearby) {
+    btnNearby.textContent = "Venue Calendar";
+    btnNearby.classList.add("btn-gold");
+    btnNearby.classList.remove("btn-sec");
+  }
+  const btnSort = document.getElementById("barBtnCalSort");
+  if (btnSort) btnSort.classList.add("hidden");
+
+  const saved = getSavedNearby();
+  const locIn = document.getElementById("nbLoc");
+  const radIn = document.getElementById("nbRadius");
+  if (locIn && saved.location) locIn.value = saved.location;
+  if (radIn && saved.radius) radIn.value = saved.radius;
+
+  if (saved.location) {
+    runNearbySearch();
+  } else {
+    const box = document.getElementById("calList");
+    box.innerHTML = `<div style="font-size:13px;color:var(--muted);padding:14px 0;text-align:center;">Enter your city, state, or ZIP above and tap <b>Search</b> to find all IFPA pinball tournaments nearby.</div>`;
+    if (locIn) locIn.focus();
+  }
+}
+
+function exitNearbySearch() {
+  calData.nearbyMode = false;
+  const calHdr = document.querySelector("#vCal h3");
+  if (calHdr) calHdr.textContent = "Venue Calendar";
+  const addVenueBtn = document.querySelector("#vCal button[onclick*='toggleAddVenue']");
+  if (addVenueBtn) addVenueBtn.classList.remove("hidden");
+
+  const pills = document.getElementById("calPills");
+  if (pills) pills.classList.remove("hidden");
+  const nbBox = document.getElementById("nearbySearchBox");
+  if (nbBox) nbBox.classList.add("hidden");
+
+  const btnNearby = document.getElementById("barBtnNearby");
+  if (btnNearby) {
+    btnNearby.textContent = "Search Nearby";
+    btnNearby.classList.remove("btn-gold");
+    btnNearby.classList.add("btn-sec");
+  }
+  const btnSort = document.getElementById("barBtnCalSort");
+  if (btnSort && !document.getElementById("vCal").classList.contains("hidden")) {
+    btnSort.classList.remove("hidden");
+  }
+
+  renderCal();
+}
+
+async function runNearbySearch() {
+  const locIn = document.getElementById("nbLoc");
+  const radIn = document.getElementById("nbRadius");
+  const loc = (locIn ? locIn.value : "").trim();
+  const rad = (radIn ? radIn.value : "25") || "25";
+
+  if (!loc) {
+    alert("Please enter a City, State, ZIP, or Street Address to search.");
+    if (locIn) locIn.focus();
+    return;
+  }
+
+  setSavedNearby(loc, rad);
+
+  const box = document.getElementById("calList");
+  box.innerHTML = `<div style="font-size:13px;color:var(--muted);padding:16px 0;text-align:center;">🔍 Searching IFPA tournaments within <b>${esc(rad)} miles</b> of "${esc(loc)}"...</div>`;
+
+  try {
+    const url = `${BRIDGE_URL}?address=${encodeURIComponent(loc)}&radius=${encodeURIComponent(rad)}&t=${Date.now()}`;
+    const r = await fetch(url, { cache: "no-store" });
+    const data = await r.json();
+    let payload = {};
+    try { payload = JSON.parse(data.body); } catch (e) { payload = data.body || {}; }
+
+    const events = payload.tournaments || payload.tournament || payload.search || [];
+    if (!Array.isArray(events)) {
+      box.innerHTML = `<div style="font-size:13px;color:var(--bad);padding:10px 0;">Error reading tournament data from IFPA feed. Please try again.</div>`;
+      return;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const searchLat = payload.search_filter ? payload.search_filter.latitude : null;
+    const searchLon = payload.search_filter ? payload.search_filter.longitude : null;
+
+    const parsedList = [];
+    const seen = new Set();
+
+    events.forEach(ev => {
+      const tid = String(ev.tournament_id || "");
+      if (!tid || seen.has(tid)) return;
+      seen.add(tid);
+
+      const startD = String(ev.event_start_date || ev.start_date || "").slice(0, 10);
+      const endD = String(ev.event_end_date || ev.end_date || startD).slice(0, 10);
+      if (endD && endD < today) return;
+
+      let dist = null;
+      if (ev.distance != null && ev.distance !== "") {
+        dist = Math.round(Number(ev.distance) * 10) / 10;
+      } else if (searchLat && searchLon && ev.latitude && ev.longitude) {
+        dist = calcMiles(searchLat, searchLon, ev.latitude, ev.longitude);
+      }
+
+      const addr1 = ev.address1 || "";
+      const city = ev.city || "";
+      const stateprov = ev.stateprov || "";
+      const postal = ev.postal_code || "";
+      const rawAddr = ev.raw_address || "";
+
+      let vName = ev.location_name ? String(ev.location_name).trim() : "";
+      if (!vName && rawAddr && addr1 && rawAddr.includes(addr1)) {
+        const prefix = rawAddr.split(addr1)[0].replace(/[,•\-\t]+/g, " ").trim();
+        if (prefix.length >= 2) vName = prefix;
+      }
+      if (!vName && addr1) {
+        vName = addr1;
+      }
+
+      const viewBase = ["https://", "www.ifpapinball.com", "/tournaments/view.php?t="].join("");
+
+      parsedList.push({
+        tournament_id: tid,
+        name: ev.tournament_name || "IFPA Tournament",
+        start_date: startD,
+        end_date: endD,
+        requires_reg: /^(y|yes|true|1)$/i.test(String(ev.registration_required || ev.requires_reg || "")),
+        address1: addr1,
+        city: city,
+        stateprov: stateprov,
+        postal_code: postal,
+        raw_address: rawAddr,
+        venue_name: vName,
+        distance: dist,
+        details: (ev.details || "").slice(0, 180),
+        url: viewBase + encodeURIComponent(tid)
+      });
+    });
+
+    parsedList.sort((a, b) => (a.start_date || "9999").localeCompare(b.start_date || "9999") || (a.name || "").localeCompare(b.name || ""));
+    calData.nearbyResults = parsedList;
+    renderNearbyResults(loc, rad);
+  } catch (err) {
+    box.innerHTML = `<div style="font-size:13px;color:var(--bad);padding:10px 0;">Unable to connect to IFPA search service right now. Please check your connection and try again.</div>`;
+  }
+}
+
+function renderNearbyResults(loc, rad) {
+  if (!loc || !rad) {
+    const s = getSavedNearby();
+    loc = loc || s.location || "";
+    rad = rad || s.radius || "25";
+  }
+  const pills = document.getElementById("calPills");
+  if (pills) pills.innerHTML = "";
+  const box = document.getElementById("calList");
+  box.innerHTML = "";
+
+  const results = calData.nearbyResults || [];
+  const savedVenues = getSavedVenues();
+
+  if (!results.length) {
+    const emp = document.createElement("div");
+    emp.style.cssText = "font-size:13px;color:var(--muted);padding:14px 0;";
+    emp.innerHTML = `No upcoming IFPA tournaments found within <b>${esc(rad)} miles</b> of "${esc(loc)}". Try increasing the search radius or checking a nearby city.`;
+    box.appendChild(emp);
+    return;
+  }
+
+  results.forEach((t, idx) => {
+    const d = document.createElement("div");
+    d.className = "card";
+    d.style.background = "#0b1120";
+
+    const regBadge = t.requires_reg ? `<span style="color:var(--gold);font-size:11px;font-weight:700;"> • Pre-Reg Required</span>` : "";
+    const distBadge = (t.distance != null) ? `<span style="background:var(--card);border:1px solid var(--border);color:var(--accent);padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;">📍 ${t.distance} mi</span>` : "";
+
+    const addrParts = [t.address1, t.city, t.stateprov].filter(Boolean);
+    const addrText = addrParts.join(", ");
+
+    const checkBlob = [t.venue_name, t.raw_address, t.address1, t.city, t.stateprov, t.postal_code].filter(Boolean).join(" ");
+    const isSaved = savedVenues.some(v => matchesVenueAddress(checkBlob, v));
+
+    let saveActionBtn = "";
+    if (isSaved) {
+      saveActionBtn = `<span style="font-size:11px;color:var(--ok);font-weight:700;padding:3px 6px;">✓ Saved Venue</span>`;
+    } else {
+      saveActionBtn = `<button class="btn btn-sec" style="padding:4px 8px;font-size:11px;border-color:var(--accent);color:var(--accent);" onclick="quickSaveVenue(${idx})">+ Save Venue</button>`;
+    }
+
+    d.innerHTML = `<div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+        <b style="font-size:14px;color:var(--text);">${esc(t.name)}</b>
+        ${distBadge}
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin:3px 0;">📅 ${esc(t.start_date)}${t.end_date && t.end_date !== t.start_date ? " to " + esc(t.end_date) : ""}${regBadge}</div>
+      ${t.venue_name && t.venue_name !== t.address1 ? `<div style="font-size:13px;font-weight:600;color:var(--accent);margin:2px 0;">${esc(t.venue_name)}</div>` : ""}
+      ${addrText ? `<div style="font-size:12px;color:var(--muted);margin-bottom:4px;">📍 ${esc(addrText)}</div>` : ""}
+      ${t.details ? `<div style="font-size:12px;color:var(--text);margin-bottom:6px;">${esc(t.details)}</div>` : ""}
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid #1e293b;flex-wrap:wrap;">
+        <a href="${esc(t.url)}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">IFPA Tournament Page ↗</a>
+        <div id="saveBtnWrap_${idx}">${saveActionBtn}</div>
+      </div>
+    </div>`;
+    box.appendChild(d);
+  });
+}
+
+function quickSaveVenue(idx) {
+  const t = (calData.nearbyResults || [])[idx];
+  if (!t) return;
+  const list = getSavedVenues();
+  const vName = t.venue_name || t.address1 || "New Venue";
+  const vStreet = t.address1 || "";
+  const vCity = [t.city, t.stateprov, t.postal_code].filter(Boolean).join(", ") || t.city || "";
+  const newV = {
+    id: "v-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+    name: vName,
+    street: vStreet,
+    city: vCity
+  };
+  list.push(newV);
+  setSavedVenues(list);
+  calData.venues = list;
+  calData.loaded = false;
+  const wrap = document.getElementById("saveBtnWrap_" + idx);
+  if (wrap) {
+    wrap.innerHTML = `<span style="font-size:11px;color:var(--ok);font-weight:700;padding:3px 6px;">✓ Saved Venue</span>`;
+  }
 }
 
 loadTournaments();
